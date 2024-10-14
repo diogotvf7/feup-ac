@@ -21,6 +21,23 @@ teams_post.drop(columns=['lgID'], inplace = True)
 
 #print(teams.head())
 
+datasets = [teams, awards_players, coaches, players_teams, players, series_post, teams_post]
+datasets_names = ['teams', 'awards_players', 'coaches', 'players_teams', 'players', 'series_post', 'teams_post']
+
+
+#check for duplicated data
+for name, dataset in zip(datasets_names, datasets):
+    if(dataset.duplicated().any()):
+        print("Ups! Found duplicated data in " + name)
+
+
+#check for null data
+for name, dataset in zip(datasets_names, datasets):
+    if(dataset.isna().any().any()):
+        print("Ups! Found null values in " + name)
+
+
+
 
 #We have info about players that are not in any team -> ghost players perhaps we do not need them
 unique_players_teams = players_teams['playerID'].nunique()
