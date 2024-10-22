@@ -18,7 +18,6 @@ def aggregatePlayerData(dataset):
     dataset['assists_per_minute'] = dataset.apply(lambda row: safe_divide(row['assists'], row['minutes']), axis=1)
     dataset['assist_turnover_ratio'] = dataset.apply(lambda row: safe_divide(row['assists'], row['turnovers'], default=row['assists']), axis=1)
 
-    ## HOLY GRAIL: https://www.basketball-reference.com/about/factors.html
     ## Dream Statistic -> PER 
 
     #https://www.teamrankings.com/nba/player/nikola-jokic
@@ -38,11 +37,50 @@ def aggregatePlayerData(dataset):
     return dataset[columns_to_keep]
 
 
-def aggregateDataset(dataset):
-    aggregated_data = aggregatePlayerData(dataset['players_teams'])
+def aggregateTeamData(dataset):
     
-    csv_filename = 'aggregated_players_teams.csv'
-    aggregated_data.to_csv(csv_filename, index=False)
+    min_fg_attempts = 5
+
+    ## HOLY GRAIL: https://www.basketball-reference.com/about/factors.html
+    # Forward and backward passing - feature selection
+
+    # Weight -> 40%
+    dataset['effective_fg_percentage'] = dataset.apply(lambda row: safe_divide(row['o_fgm'] + 0.5 * row['o_3pm'], row['o_fga'], min_fg_attempts), axis=1)
+    # Weight -> 25%
+    dataset['turnover_percentage'] = dataset.apply(lambda row: safe_divide(row['o_to'], row['o_fga'] + 0.44 * row['o_fta'] + row['o_to']), axis=1)
+    # Weight -> 15%
+    dataset['free_throw_factor'] = dataset.apply(lambda row: safe_divide(row['o_ftm'], row['o_fta'], min_fg_attempts), axis=1)
+    # Rebounding -> 20%
+    dataset['offensive_rebound_percentage'] = dataset.apply(lambda row: safe_divide(row['o_oreb'], row['o_oreb'] + row['d_dreb']), axis=1)
+    dataset['defensive_rebound_percentage'] = dataset.apply(lambda row: safe_divide(row['o_dreb'], row['d_oreb'] + row['o_dreb']), axis = 1)
+    dataset['rebounding_factor'] = dataset['offensive_rebound_percentage'] + dataset['defensive_rebound_percentage']
+
+    dataset['win_percentage'] = dataset.apply(lambda row: safe_divide(row['won'], row['GP']), axis=1)
+    dataset['points_allowed_per_game'] = dataset.apply(lambda row: safe_divide(row['d_pts'], row['GP']), axis=1)
+    dataset['points_per_game'] = dataset.apply(lambda row: safe_divide(row['o_pts'] , row['GP']), axis=1)
+
+
+    columns_to_keep = [
+        'year', 'tmID', 'franchID', 'GP', 'won', 'lost', 'win_percentage',
+        'effective_fg_percentage', 'turnover_percentage', 'free_throw_factor',
+        'offensive_rebound_percentage', 'defensive_rebound_percentage', 'rebounding_factor',
+        'points_per_game', 'points_allowed_per_game',
+        'playoff', 'confW', 'confL', 'homeW', 'homeL', 'awayW', 'awayL'
+    ]
+
+    return dataset[columns_to_keep]
+
+
+def aggregateDataset(dataset):
+    player_aggregated_data = aggregatePlayerData(dataset['players_teams'])
+    team_aggregated_data = aggregateTeamData(dataset['teams'])
+    return player_aggregated_data, team_aggregated_data
+    
+"""     csv_filename = 'aggregated_players_teams.csv'
+    player_aggregated_data.to_csv(csv_filename, index=False)
     print(f"Aggregated data has been saved to {csv_filename}")
 
-    return aggregated_data
+    csv_filename = 'aggregated_teams.csv'
+    team_aggregated_data.to_csv(csv_filename, index=False)
+    print(f"Aggregated data has been saved to {csv_filename}") """
+

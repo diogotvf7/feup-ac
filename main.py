@@ -76,6 +76,16 @@ datasets['players'].loc[:, 'collegeOther'] = datasets['players']['collegeOther']
         print(f"Ups! Found null values in {name}")
         print(null_rows) """
 
-aggregateData.aggregateDataset(datasets)
+players_teams, teams = aggregateData.aggregateDataset(datasets)
+datasets['players_teams'] = players_teams
+datasets['teams'] = teams
+
+# Print columns for players_teams
+print("Columns in players_teams:")
+print(datasets['players_teams'].columns.tolist())
+
+# Print columns for teams
+print("\nColumns in teams:")
+print(datasets['teams'].columns.tolist())
 
 
