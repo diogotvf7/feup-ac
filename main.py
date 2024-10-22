@@ -1,5 +1,6 @@
 import pandas as pd
 import linearRegression 
+import aggregateData
 
 awards_players = pd.read_csv("dataset/awards_players.csv")
 coaches = pd.read_csv("dataset/coaches.csv")
@@ -64,8 +65,8 @@ datasets['players'] = players_
 print(len(datasets['players'][datasets['players']['weight'] == 0]))
 
 
-datasets['players']['college'].fillna('none', inplace=True)
-datasets['players']['collegeOther'].fillna('none', inplace=True)
+datasets['players'].loc[:, 'college'] = datasets['players']['college'].fillna('none')
+datasets['players'].loc[:, 'collegeOther'] = datasets['players']['collegeOther'].fillna('none')
 
 
 #check for null data
@@ -74,4 +75,17 @@ datasets['players']['collegeOther'].fillna('none', inplace=True)
     if not null_rows.empty:
         print(f"Ups! Found null values in {name}")
         print(null_rows) """
+
+players_teams, teams = aggregateData.aggregateDataset(datasets)
+datasets['players_teams'] = players_teams
+datasets['teams'] = teams
+
+# Print columns for players_teams
+print("Columns in players_teams:")
+print(datasets['players_teams'].columns.tolist())
+
+# Print columns for teams
+print("\nColumns in teams:")
+print(datasets['teams'].columns.tolist())
+
 
