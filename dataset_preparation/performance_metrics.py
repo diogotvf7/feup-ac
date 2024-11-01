@@ -76,11 +76,3 @@ def calculate(dataset):
     team_aggregated_data = aggregateTeamData(dataset['teams'])
     return player_aggregated_data, team_aggregated_data
     
-"""     csv_filename = 'aggregated_players_teams.csv'
-    player_aggregated_data.to_csv(csv_filename, index=False)
-    print(f"Aggregated data has been saved to {csv_filename}")
-
-    csv_filename = 'aggregated_teams.csv'
-    team_aggregated_data.to_csv(csv_filename, index=False)
-    print(f"Aggregated data has been saved to {csv_filename}") """
-

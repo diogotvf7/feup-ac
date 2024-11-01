@@ -1,11 +1,10 @@
 import pandas as pd
-import dataset_preparation.linearRegression as linearRegression 
-import dataset_preparation.performanceMetrics as performanceMetrics
+import dataset_preparation.linear_regression as linear_regression 
+import dataset_preparation.performance_metrics as performance_metrics
+from dataset_preparation.outliers_verification import process_outliers
 from feature_selection.implementations import select_features, select_spearman
 from sklearn.feature_selection import chi2, mutual_info_classif, f_classif, f_regression, RFE
-from dataset_preparation.mergeDatasets import process_data
-import matplotlib.pyplot as plt
-import seaborn as sns
+from dataset_preparation.merge_datasets import process_data
 
 awards_players = pd.read_csv("dataset/awards_players.csv")
 coaches = pd.read_csv("dataset/coaches.csv")
@@ -64,7 +63,7 @@ print("Player after removal: " + str(players_['bioID'].count()))
 
 missing_data = players_[players_['weight'] == 0]
 train_data = players_[players_['weight'] != 0]
-linearRegression.replaceMissingValues(train_data, missing_data, 'weight', 'height', 'pos', players_)
+linear_regression.replaceMissingValues(train_data, missing_data, 'weight', 'height', 'pos', players_)
 
 datasets['players'] = players_
 print(len(datasets['players'][datasets['players']['weight'] == 0]))
@@ -74,7 +73,7 @@ datasets['players'].loc[:, 'college'] = datasets['players']['college'].fillna('n
 datasets['players'].loc[:, 'collegeOther'] = datasets['players']['collegeOther'].fillna('none')
 
 
-players_teams, teams = performanceMetrics.calculate(datasets)
+players_teams, teams = performance_metrics.calculate(datasets)
 datasets['players_teams'] = players_teams
 datasets['teams'] = teams
 
@@ -103,12 +102,16 @@ features = final_dataset.drop(columns=['playoff'])
 target = final_dataset['playoff']
 
 ## Feature Selection
-print("Selected features from chi2:", select_features(features, target, chi2))  
+""" print("Selected features from chi2:", select_features(features, target, chi2))  
 print("Selected features from mutual information:", select_features(features, target, mutual_info_classif))  
 print("Selected features from anova:", select_features(features, target, f_classif))  
 print("Selected features from pearson:", select_features(features, target, f_regression))  
 print("Selected features from RFE:", select_features(features, target, RFE))  
-print("Selected features from spearman:", select_spearman(features, target))  
+print("Selected features from spearman:", select_spearman(features, target))   """
 
-#TODO: Check for outliers
+selected_features = select_features(features, target, mutual_info_classif)
+
+# Not sure if we should do this here
+process_outliers(selected_features, final_dataset)
+
 
