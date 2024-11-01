@@ -2,9 +2,13 @@ import pandas as pd
 import dataset_preparation.linear_regression as linear_regression 
 import dataset_preparation.performance_metrics as performance_metrics
 from dataset_preparation.outliers_verification import process_outliers
-from feature_selection.implementations import select_features, select_spearman
-from sklearn.feature_selection import chi2, mutual_info_classif, f_classif, f_regression, RFE
+from feature_selection.implementations import select_features
+from sklearn.feature_selection import mutual_info_classif
 from dataset_preparation.merge_datasets import process_data
+from sklearn.linear_model import LogisticRegression
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 awards_players = pd.read_csv("dataset/awards_players.csv")
 coaches = pd.read_csv("dataset/coaches.csv")
@@ -80,8 +84,8 @@ datasets['teams'] = teams
 
 #Merge all datasets into one
 final_dataset = process_data(datasets)
-
-correlation_matrix = final_dataset.corr()
+final_dataset4corr = final_dataset.drop(columns=['tmID'])
+correlation_matrix = final_dataset4corr.corr()
 
 """ plt.figure(figsize=(19, 16))
 sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap='coolwarm', square=True, 
@@ -92,13 +96,33 @@ plt.yticks(fontsize=14)
 plt.tight_layout()
 plt.show() """
 
+
+
 #By analysing the correlation matrix we can see some attributes are highly correlated with eachother, the yare even redundant -> win is highly correlated with homeW , awayW, confW etc
 #This might be a problem of overfitting as later on in feature selectin these attributes will all be chosen because wins is one of the most important ones
 #Lets drop some of them
 final_dataset = final_dataset.drop(columns=['homeW', 'confW', 'awayW', 'confL', 'homeL', 'awayL'])
 final_dataset.to_csv('dataset/final_dataset.csv', index=False)
 
-features = final_dataset.drop(columns=['playoff'])
+
+""" final_dataset4corr = final_dataset.drop(columns=['tmID'])
+correlation_matrix = final_dataset4corr.corr()
+# Filter the correlation matrix to only include correlations related to 'playoff'
+playoff_correlation = correlation_matrix[['playoff']]
+playoff_correlation = playoff_correlation.sort_values(by='playoff', ascending=False)
+
+plt.figure(figsize=(19, 16))
+sns.heatmap(playoff_correlation, annot=True, fmt=".2f", cmap='coolwarm', square=True, 
+            cbar_kws={"shrink": .5}, linewidths=0.5, linecolor='black', annot_kws={"size": 10})
+plt.title('Correlation with Playoffs', fontsize=20)
+plt.xticks(fontsize=14, rotation=45) 
+plt.yticks(fontsize=14)
+plt.tight_layout()
+plt.show()
+ """
+
+
+features = final_dataset.drop(columns=['playoff', 'tmID'])
 target = final_dataset['playoff']
 
 ## Feature Selection
@@ -110,8 +134,27 @@ print("Selected features from RFE:", select_features(features, target, RFE))
 print("Selected features from spearman:", select_spearman(features, target))   """
 
 selected_features = select_features(features, target, mutual_info_classif)
-
+print(selected_features)
 # Not sure if we should do this here
 process_outliers(selected_features, final_dataset)
 
 
+
+train_data = final_dataset[final_dataset['year'].isin(range(1,10))]
+features_train = train_data.drop(columns=['playoff', 'tmID'])
+
+target_train = train_data['playoff']
+model = LogisticRegression(max_iter=2000)  
+model.fit(features_train, target_train)
+
+season_10_data = final_dataset[final_dataset['year'] == 10]
+features_season_10 = season_10_data.drop(columns=['playoff', 'tmID'])
+
+predicted_probabilities = model.predict_proba(features_season_10)[:, 1]
+season_10_data['predicted_probabilities'] = predicted_probabilities.round(2)
+top_teams = season_10_data.sort_values(by='predicted_probabilities', ascending=False)
+selected_teams = top_teams.drop_duplicates(subset='tmID')
+print("Predicted Teams:", selected_teams)
+
+playoffs_teams = final_dataset[(final_dataset['playoff'] == 1) & (final_dataset['year'] == 10)]  
+print("Teams who went to the playoffs:", playoffs_teams['tmID'].unique())

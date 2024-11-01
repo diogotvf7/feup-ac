@@ -63,7 +63,7 @@ def create_final_dataset(players_awards_merged, teams_playoffs_coaches_merged):
 
 def drop_text_features(final_dataset):
     """Drop unnecessary text features from the final dataset."""
-    return final_dataset.drop(columns=['playerID', 'tmID', 'pos', 'college', 'collegeOther', 'birthDate', 'deathDate', 'franchID', 'coachID'])
+    return final_dataset.drop(columns=['playerID', 'pos', 'college', 'collegeOther', 'birthDate', 'deathDate', 'franchID', 'coachID'])
 
 def process_data(datasets):
     """Main function to process the datasets."""
