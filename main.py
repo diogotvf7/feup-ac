@@ -1,6 +1,11 @@
 import pandas as pd
-import linearRegression 
-import aggregateData
+import dataset_preparation.linearRegression as linearRegression 
+import dataset_preparation.performanceMetrics as performanceMetrics
+from feature_selection.implementations import select_features, select_spearman
+from sklearn.feature_selection import chi2, mutual_info_classif, f_classif, f_regression, RFE
+from dataset_preparation.mergeDatasets import process_data
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 awards_players = pd.read_csv("dataset/awards_players.csv")
 coaches = pd.read_csv("dataset/coaches.csv")
@@ -69,23 +74,41 @@ datasets['players'].loc[:, 'college'] = datasets['players']['college'].fillna('n
 datasets['players'].loc[:, 'collegeOther'] = datasets['players']['collegeOther'].fillna('none')
 
 
-#check for null data
-""" for name, dataset in datasets.items():
-    null_rows = dataset[dataset.isna().any(axis=1)]  # Get rows with any NaN values
-    if not null_rows.empty:
-        print(f"Ups! Found null values in {name}")
-        print(null_rows) """
-
-players_teams, teams = aggregateData.aggregateDataset(datasets)
+players_teams, teams = performanceMetrics.calculate(datasets)
 datasets['players_teams'] = players_teams
 datasets['teams'] = teams
 
-# Print columns for players_teams
-print("Columns in players_teams:")
-print(datasets['players_teams'].columns.tolist())
 
-# Print columns for teams
-print("\nColumns in teams:")
-print(datasets['teams'].columns.tolist())
+#Merge all datasets into one
+final_dataset = process_data(datasets)
 
+correlation_matrix = final_dataset.corr()
+
+""" plt.figure(figsize=(19, 16))
+sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap='coolwarm', square=True, 
+            cbar_kws={"shrink": .5}, linewidths=0.5, linecolor='black', annot_kws={"size": 10})
+plt.title('Correlation Matrix', fontsize=20)
+plt.xticks(fontsize=14, rotation=45) 
+plt.yticks(fontsize=14)
+plt.tight_layout()
+plt.show() """
+
+#By analysing the correlation matrix we can see some attributes are highly correlated with eachother, the yare even redundant -> win is highly correlated with homeW , awayW, confW etc
+#This might be a problem of overfitting as later on in feature selectin these attributes will all be chosen because wins is one of the most important ones
+#Lets drop some of them
+final_dataset = final_dataset.drop(columns=['homeW', 'confW', 'awayW', 'confL', 'homeL', 'awayL'])
+final_dataset.to_csv('dataset/final_dataset.csv', index=False)
+
+features = final_dataset.drop(columns=['playoff'])
+target = final_dataset['playoff']
+
+## Feature Selection
+print("Selected features from chi2:", select_features(features, target, chi2))  
+print("Selected features from mutual information:", select_features(features, target, mutual_info_classif))  
+print("Selected features from anova:", select_features(features, target, f_classif))  
+print("Selected features from pearson:", select_features(features, target, f_regression))  
+print("Selected features from RFE:", select_features(features, target, RFE))  
+print("Selected features from spearman:", select_spearman(features, target))  
+
+#TODO: Check for outliers
 

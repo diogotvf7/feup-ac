@@ -21,17 +21,17 @@ def aggregatePlayerData(dataset):
     ## Dream Statistic -> PER 
 
     #https://www.teamrankings.com/nba/player/nikola-jokic
-    dataset['effective_fg_percentage'] = dataset.apply(lambda row: safe_divide(row['fgMade'] + 0.5 * row['threeMade'], row['fgAttempted'], min_fg_attempts), axis=1)
+    dataset['effective_fg_percentage_player'] = dataset.apply(lambda row: safe_divide(row['fgMade'] + 0.5 * row['threeMade'], row['fgAttempted'], min_fg_attempts), axis=1)
     #turnovers cant be done individually :     https://sportsjourneysinternational.com/sji-coaches-corner/turnover-percentage-the-second-most-important-factor-of-basketball-success/#:~:text=The%20easiest%20way%20to%20look%20at%20the%20individual,provides%20a%20good%20baseline%20for%20your%20individual%20statistics.
     #https://www.teamrankings.com/nba/player/stephen-curry
-    dataset['free_throw_rate'] = dataset.apply(lambda row: safe_divide(row['ftMade'], row['ftAttempted'], min_fg_attempts), axis=1)
+    dataset['free_throw_rate_player'] = dataset.apply(lambda row: safe_divide(row['ftMade'], row['ftAttempted'], min_fg_attempts), axis=1)
    
    
     columns_to_keep = [
         'playerID', 'year', 'stint', 'tmID', 'GP', 'GS', 'minutes', 'points', 'fgAttempted', 'ftAttempted',
         'fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage',
         'rebounds_per_minute', 'steals_per_minute', 'blocks_per_minute', 'assists_per_minute',
-        'assist_turnover_ratio', 'effective_fg_percentage', 'free_throw_rate'
+        'assist_turnover_ratio', 'effective_fg_percentage_player', 'free_throw_rate_player'
     ]
 
     return dataset[columns_to_keep]
@@ -63,7 +63,7 @@ def aggregateTeamData(dataset):
     columns_to_keep = [
         'year', 'tmID', 'franchID', 'GP', 'won', 'lost', 'win_percentage',
         'effective_fg_percentage', 'turnover_percentage', 'free_throw_factor',
-        'offensive_rebound_percentage', 'defensive_rebound_percentage', 'rebounding_factor',
+        'rebounding_factor',
         'points_per_game', 'points_allowed_per_game',
         'playoff', 'confW', 'confL', 'homeW', 'homeL', 'awayW', 'awayL'
     ]
@@ -71,7 +71,7 @@ def aggregateTeamData(dataset):
     return dataset[columns_to_keep]
 
 
-def aggregateDataset(dataset):
+def calculate(dataset):
     player_aggregated_data = aggregatePlayerData(dataset['players_teams'])
     team_aggregated_data = aggregateTeamData(dataset['teams'])
     return player_aggregated_data, team_aggregated_data
