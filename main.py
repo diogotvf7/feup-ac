@@ -1,15 +1,10 @@
 import pandas as pd
 import dataset_preparation.linear_regression as linear_regression 
 import dataset_preparation.performance_metrics as performance_metrics
-from dataset_preparation.outliers_verification import process_outliers
-from feature_selection.implementations import select_features
-from sklearn.feature_selection import mutual_info_classif
-from dataset_preparation.merge_datasets import process_data
-from sklearn.linear_model import LogisticRegression
-import matplotlib.pyplot as plt
-import seaborn as sns
+from dataset_preparation.create_final_dataset import create_final_dataset
 
 
+# TODO LOAD DATA
 awards_players = pd.read_csv("dataset/awards_players.csv")
 coaches = pd.read_csv("dataset/coaches.csv")
 players_teams = pd.read_csv("dataset/players_teams.csv")
@@ -20,6 +15,10 @@ teams = pd.read_csv("dataset/teams.csv")
 
 #print(coaches.head())
 
+# ================================================================================================================================================================
+
+# ================================================================================================================================================================
+# TODO DATA PREPROCESSING
 teams.drop(columns=['lgID', 'divID', 'seeded','tmORB','tmDRB','tmTRB','opptmORB','opptmDRB','opptmTRB', 'arena'], inplace=True)
 awards_players.drop(columns=['lgID'],  inplace = True)
 coaches.drop(columns=['lgID'], inplace = True)
@@ -44,7 +43,6 @@ for name, dataset in datasets.items():
 for name, dataset in datasets.items():
     if(dataset.isna().any().any()):
         print("Ups! Found null values in " + name)
-
 
 #We have info about players that are not in any team -> ghost players perhaps we do not need them
 unique_players_teams = datasets['players_teams']['playerID'].nunique()
@@ -76,85 +74,25 @@ print(len(datasets['players'][datasets['players']['weight'] == 0]))
 datasets['players'].loc[:, 'college'] = datasets['players']['college'].fillna('none')
 datasets['players'].loc[:, 'collegeOther'] = datasets['players']['collegeOther'].fillna('none')
 
+# ================================================================================================================================================================
 
+# ================================================================================================================================================================
+# TODO FEATURE ENGINEERING
 players_teams, teams = performance_metrics.calculate(datasets)
 datasets['players_teams'] = players_teams
 datasets['teams'] = teams
 
+# ================================================================================================================================================================
 
-#Merge all datasets into one
-final_dataset = process_data(datasets)
-final_dataset4corr = final_dataset.drop(columns=['tmID'])
-correlation_matrix = final_dataset4corr.corr()
+# ================================================================================================================================================================
+# TODO CREATE FINAL DATASET
 
-""" plt.figure(figsize=(19, 16))
-sns.heatmap(correlation_matrix, annot=True, fmt=".2f", cmap='coolwarm', square=True, 
-            cbar_kws={"shrink": .5}, linewidths=0.5, linecolor='black', annot_kws={"size": 10})
-plt.title('Correlation Matrix', fontsize=20)
-plt.xticks(fontsize=14, rotation=45) 
-plt.yticks(fontsize=14)
-plt.tight_layout()
-plt.show() """
+players_not_in_year_10 = datasets['players_teams'][datasets['players_teams']['year'] != 10]
+players_not_in_year_10.to_csv('dataset/finals/players_final.csv', index=False)
+
+create_final_dataset(datasets['teams_post'], datasets['teams'])
+
+# ================================================================================================================================================================
 
 
 
-#By analysing the correlation matrix we can see some attributes are highly correlated with eachother, the yare even redundant -> win is highly correlated with homeW , awayW, confW etc
-#This might be a problem of overfitting as later on in feature selectin these attributes will all be chosen because wins is one of the most important ones
-#Lets drop some of them
-final_dataset = final_dataset.drop(columns=['homeW', 'confW', 'awayW', 'confL', 'homeL', 'awayL'])
-final_dataset.to_csv('dataset/final_dataset.csv', index=False)
-
-
-""" final_dataset4corr = final_dataset.drop(columns=['tmID'])
-correlation_matrix = final_dataset4corr.corr()
-# Filter the correlation matrix to only include correlations related to 'playoff'
-playoff_correlation = correlation_matrix[['playoff']]
-playoff_correlation = playoff_correlation.sort_values(by='playoff', ascending=False)
-
-plt.figure(figsize=(19, 16))
-sns.heatmap(playoff_correlation, annot=True, fmt=".2f", cmap='coolwarm', square=True, 
-            cbar_kws={"shrink": .5}, linewidths=0.5, linecolor='black', annot_kws={"size": 10})
-plt.title('Correlation with Playoffs', fontsize=20)
-plt.xticks(fontsize=14, rotation=45) 
-plt.yticks(fontsize=14)
-plt.tight_layout()
-plt.show()
- """
-
-
-features = final_dataset.drop(columns=['playoff', 'tmID'])
-target = final_dataset['playoff']
-
-## Feature Selection
-""" print("Selected features from chi2:", select_features(features, target, chi2))  
-print("Selected features from mutual information:", select_features(features, target, mutual_info_classif))  
-print("Selected features from anova:", select_features(features, target, f_classif))  
-print("Selected features from pearson:", select_features(features, target, f_regression))  
-print("Selected features from RFE:", select_features(features, target, RFE))  
-print("Selected features from spearman:", select_spearman(features, target))   """
-
-selected_features = select_features(features, target, mutual_info_classif)
-print(selected_features)
-# Not sure if we should do this here
-process_outliers(selected_features, final_dataset)
-
-
-
-train_data = final_dataset[final_dataset['year'].isin(range(1,10))]
-features_train = train_data.drop(columns=['playoff', 'tmID'])
-
-target_train = train_data['playoff']
-model = LogisticRegression(max_iter=2000)  
-model.fit(features_train, target_train)
-
-season_10_data = final_dataset[final_dataset['year'] == 10]
-features_season_10 = season_10_data.drop(columns=['playoff', 'tmID'])
-
-predicted_probabilities = model.predict_proba(features_season_10)[:, 1]
-season_10_data['predicted_probabilities'] = predicted_probabilities.round(2)
-top_teams = season_10_data.sort_values(by='predicted_probabilities', ascending=False)
-selected_teams = top_teams.drop_duplicates(subset='tmID')
-print("Predicted Teams:", selected_teams)
-
-playoffs_teams = final_dataset[(final_dataset['playoff'] == 1) & (final_dataset['year'] == 10)]  
-print("Teams who went to the playoffs:", playoffs_teams['tmID'].unique())
