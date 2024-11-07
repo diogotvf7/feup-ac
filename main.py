@@ -35,7 +35,7 @@ datasets = {'teams' : teams, 'awards_players' : awards_players , 'coaches' : coa
 
 #check for duplicated data
 for name, dataset in datasets.items():
-    if(dataset.duplicated().any()):
+    if (dataset.duplicated().any()):
         print("Ups! Found duplicated data in " + name)
 
 
@@ -44,7 +44,8 @@ for name, dataset in datasets.items():
     if(dataset.isna().any().any()):
         print("Ups! Found null values in " + name)
 
-#We have info about players that are not in any team -> ghost players perhaps we do not need them
+# We have info about players that are not in any team -> ghost players perhaps we do not need them
+# TODO wtf is going on here??
 unique_players_teams = datasets['players_teams']['playerID'].nunique()
 unique_players = datasets['players']['bioID'].nunique()
 
@@ -59,7 +60,9 @@ players_ = datasets['players'][datasets['players']['bioID'].isin(datasets['playe
 print("Player after removal: " + str(players_['bioID'].count()))
 
 
-#Now we only have players with weight set to 0 (all players that had height set to 0 were removed in the step before)
+# Now we only have players with weight set to 0 (all players that had height set to 0 were removed in the step before)
+# TODO porque e que malta com height = 0 é removida??
+
 #Replace missing values for a players's weight and height using linear regression taking into account height and position
 
 
