@@ -61,12 +61,16 @@ def prepTrainingDataset(datasets):
     #turnovers cant be done individually :     https://sportsjourneysinternational.com/sji-coaches-corner/turnover-percentage-the-second-most-important-factor-of-basketball-success/#:~:text=The%20easiest%20way%20to%20look%20at%20the%20individual,provides%20a%20good%20baseline%20for%20your%20individual%20statistics.
     # dataset['turnover_percentage'] = dataset.apply(lambda row: safe_divide(row['o_to'], (row['o_fga']- row['o_oreb'])) + row['o_to'] + (row['o_fta']*0.475))
    
+    dataset = dataset.drop(dataset[dataset.year == 10].index)
+
     columns_to_keep = [
-        'year', 'tmID',
+        'tmID',
         'fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage',
         'rebounds_per_minute', 'steals_per_minute', 'blocks_per_minute', 'assists_per_minute', 'assist_turnover_ratio',
         'effective_fg_percentage', 'playoff'
     ]
+
+
 
     return dataset[columns_to_keep]
 
