@@ -14,7 +14,7 @@ aggregation_functions = {
     'blocks_per_minute': 'mean',        
     'assists_per_minute': 'mean',       
     'assist_turnover_ratio': 'mean',    
-    'effective_fg_percentage_player': 'mean',  
+    'effective_fg_percentage': 'mean',  
 }
 
 def calculate_avg_stats_rookie(players):
@@ -30,7 +30,7 @@ def calculate_avg_stats_rookie(players):
             'blocks_per_minute', 
             'assists_per_minute', 
             'assist_turnover_ratio',             
-            'effective_fg_percentage_player']
+            'effective_fg_percentage']
     rookie_years = players.groupby('playerID')['year'].min().reset_index()
 
     rookies = players.merge(rookie_years, on=['playerID', 'year'])    
@@ -59,9 +59,8 @@ def teams_playoffs(teams_stats, teams_post_df, teams_df):
     return playoffs_percentage
 
 
-def create_final_dataset(teams_post_df, teams_df):
+def create_final_dataset(teams_post_df, teams_df, players):
 
-    players = pd.read_csv('dataset/finals/players_final.csv')
     s10 = pd.read_csv('dataset/finals/s10.csv') 
     rookie_avg_stats = calculate_avg_stats_rookie(players)
 
@@ -70,12 +69,12 @@ def create_final_dataset(teams_post_df, teams_df):
     merged_data = pd.merge(s10, players, on='playerID', how='left')
     merged_data = merged_data.fillna(rookie_avg_stats)
 
-    merged_data.to_csv('dataset/finals/merged_data.csv', index=False)
-
     #Calculate Team Stats
     team_stats = merged_data.groupby(['tmID']).agg(aggregation_functions).reset_index()
     team_stats = team_stats.round(3)
     playoffs_percentage = teams_playoffs(team_stats, teams_post_df, teams_df)
 
     team_stats['playoffs_percentage'] = team_stats['tmID'].map(playoffs_percentage)
-    team_stats.to_csv('dataset/finals/team_stats_by_year.csv', index=False)    
+    team_stats.to_csv('dataset/finals/s10_team_stats.csv', index=False)    
+
+    return team_stats

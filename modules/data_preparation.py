@@ -61,6 +61,15 @@ def fillWithNone(dataset):
 
     return dataset
 
+def checkDuplicatedData(dataset):
+    for name, data in dataset.items():
+        if (data.duplicated().any()):
+            raise Exception("Duplicate data found in " + name)
+
+def checkNullValue(dataset):
+    for name, data in dataset.items():
+        if (data.isna().any().any()):
+            raise Exception("Null values found in " + name)    
 
 FUNCTIONS = [
     dropColumns,
@@ -87,14 +96,10 @@ def dataPreparation(dataset):
     #These functions are somehow breaking the entire dataset, keep commentated unless you find a fix
 
     # Check for duplicated data
-    # for name, dataset in dataset.items():
-    #     if (dataset.duplicated().any()):
-    #         raise Exception("Duplicate data found in " + name)
+    checkDuplicatedData(dataset)
             
     # # Check for null data
-    # for name, dataset in dataset.items():
-    #     if (dataset.isna().any().any()):
-    #         raise Exception("Null values found in " + name)
+    checkNullValue(dataset)
         
     return dataset
     
