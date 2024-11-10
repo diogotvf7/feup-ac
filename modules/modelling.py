@@ -64,6 +64,7 @@ def prepTrainingDataset(datasets):
     dataset = dataset.drop(dataset[dataset.year == 10].index)
 
     columns_to_keep = [
+        'o_pts', 'o_fga', 'o_fta',
         'fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage',
         'rebounds_per_minute', 'steals_per_minute', 'blocks_per_minute', 'assists_per_minute', 'assist_turnover_ratio',
         'effective_fg_percentage', 'playoff'
