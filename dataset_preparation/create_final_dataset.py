@@ -15,7 +15,6 @@ aggregation_functions = {
     'assists_per_minute': 'mean',       
     'assist_turnover_ratio': 'mean',    
     'effective_fg_percentage_player': 'mean',  
-    'free_throw_rate_player': 'mean'    
 }
 
 def calculate_avg_stats_rookie(players):
@@ -31,8 +30,7 @@ def calculate_avg_stats_rookie(players):
             'blocks_per_minute', 
             'assists_per_minute', 
             'assist_turnover_ratio',             
-            'effective_fg_percentage_player',    
-            'free_throw_rate_player']
+            'effective_fg_percentage_player']
     rookie_years = players.groupby('playerID')['year'].min().reset_index()
 
     rookies = players.merge(rookie_years, on=['playerID', 'year'])    

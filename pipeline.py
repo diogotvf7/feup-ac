@@ -40,7 +40,9 @@ def main():
     # Modelling
     datasets = modelling(datasets)
 
-
+    training_dataset = datasets['training_dataset']
+    training_dataset = training_dataset.sort_values(by='year') # Not necessary, just easier to see
+    training_dataset.to_csv('dataset/finals/training.csv', index = False)
     players_not_in_year_10 = datasets['players_teams'][datasets['players_teams']['year'] != 10]
     players_not_in_year_10.to_csv('dataset/finals/players_final.csv', index=False)
 
