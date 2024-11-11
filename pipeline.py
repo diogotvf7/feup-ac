@@ -33,10 +33,10 @@ DATASETS = [
 ]
 
 models = [
-    # LogisticRegression(max_iter=1000),
+    LogisticRegression(max_iter=1000),
     RandomForestClassifier(n_estimators=100),
-    # SVC(probability=True),
-    # KNeighborsClassifier(n_neighbors=5)
+    SVC(probability=True),
+    KNeighborsClassifier(n_neighbors=5)
 ]
 
 def main():
@@ -50,13 +50,15 @@ def main():
     datasets = modelling(datasets)
 
     training_dataset = datasets['training_dataset']
-    # training_dataset.to_csv('dataset/finals/training.csv', index = False)
+    training_dataset.to_csv('dataset/finals/training.csv', index = False)
     
     #Pass teams_post and teams to know how many times a team went to the playoffs
     evaluate_dataset = create_final_dataset(datasets['teams_post'], datasets['teams'], datasets['players_teams'][datasets['players_teams']['year'] != 10])
 
     for model in models:
-        evaluate(model, training_dataset, evaluate_dataset)
+        print(f'FOR MODEL : {model}\n')
+        for _ in range(1, 20):
+            evaluate(model, training_dataset, evaluate_dataset)
 
 
 if __name__ == "__main__":
