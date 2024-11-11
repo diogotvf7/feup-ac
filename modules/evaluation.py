@@ -17,7 +17,7 @@ def evaluate(model, training_dataset, evaluate_dataset):
     model.fit(features_train, target_train)
 
     #TODO:Shouldn't need to drop columns here, besides tmID
-    s10_team_features = evaluate_data_copy.drop(columns=['tmID', 'fgAttempted', 'ftAttempted', 'playoffs_percentage', 'points'])
+    s10_team_features = evaluate_data_copy.drop(columns=['tmID'])
     playoff_probabilities = model.predict_proba(s10_team_features)[:, 1]
     
     evaluate_data_copy['playoff_probability'] = playoff_probabilities

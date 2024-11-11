@@ -33,10 +33,10 @@ DATASETS = [
 ]
 
 models = [
-    LogisticRegression(max_iter=1000),
+    # LogisticRegression(max_iter=1000),
     RandomForestClassifier(n_estimators=100),
-    SVC(probability=True),
-    KNeighborsClassifier(n_neighbors=5)
+    # SVC(probability=True),
+    # KNeighborsClassifier(n_neighbors=5)
 ]
 
 def main():
