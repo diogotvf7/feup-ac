@@ -1,7 +1,9 @@
-import pandas as pd
-
 from modules import *
 from dataset_preparation.create_final_dataset import create_final_dataset
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 # 1. Load data
 #
@@ -30,6 +32,13 @@ DATASETS = [
     "dataset/teams.csv"
 ]
 
+models = [
+    LogisticRegression(max_iter=1000),
+    RandomForestClassifier(n_estimators=100),
+    SVC(probability=True),
+    KNeighborsClassifier(n_neighbors=5)
+]
+
 def main():
     # Data Load
     datasets = loadLoad(DATASETS)
@@ -40,11 +49,18 @@ def main():
     # Modelling
     datasets = modelling(datasets)
 
+    training_dataset = datasets['training_dataset']
+    # training_dataset.to_csv('dataset/finals/training.csv', index = False)
+    
+    #Pass teams_post and teams to know how many times a team went to the playoffs
+    evaluate_dataset = create_final_dataset(datasets['teams_post'], 
+                                            datasets['teams'], 
+                                            datasets['players_teams'][datasets['players_teams']['year'] != 10])
 
-    players_not_in_year_10 = datasets['players_teams'][datasets['players_teams']['year'] != 10]
-    players_not_in_year_10.to_csv('dataset/finals/players_final.csv', index=False)
-
-    create_final_dataset(datasets['teams_post'], datasets['teams'])
+    for model in models:
+        print(f'FOR MODEL : {model}\n')
+        for _ in range(1, 20):
+            evaluate(model, training_dataset, evaluate_dataset)
 
 
 if __name__ == "__main__":

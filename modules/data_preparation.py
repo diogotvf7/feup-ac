@@ -52,11 +52,24 @@ def fillMissingWeights(dataset):
     return dataset
 
 def fillWithNone(dataset):
-    dataset['players'].loc[:, 'college'] = dataset['players']['college'].fillna('none')
-    dataset['players'].loc[:, 'collegeOther'] = dataset['players']['collegeOther'].fillna('none')
+    dataset['players']['college'] = dataset['players']['college'].fillna('none')
+    dataset['players']['collegeOther'] = dataset['players']['collegeOther'].fillna('none')
+    dataset['teams']['firstRound'] = dataset['teams']['firstRound'].fillna('DQ')
+    dataset['teams']['semis'] = dataset['teams']['semis'].fillna('DQ')
+    dataset['teams']['finals'] = dataset['teams']['finals'].fillna('DQ')
+
 
     return dataset
 
+def checkDuplicatedData(dataset):
+    for name, data in dataset.items():
+        if (data.duplicated().any()):
+            raise Exception("Duplicate data found in " + name)
+
+def checkNullValue(dataset):
+    for name, data in dataset.items():
+        if (data.isna().any().any()):
+            raise Exception("Null values found in " + name)    
 
 FUNCTIONS = [
     dropColumns,
@@ -71,16 +84,6 @@ def dataPreparation(dataset):
     # Drop unwanted columns
     dataset = dropColumns(dataset)
 
-    # Check for duplicated data
-    for name, dataset in dataset.items():
-        if (dataset.duplicated().any()):
-            raise Exception("Duplicate data found in " + name)
-            
-    # Check for null data
-    for name, dataset in dataset.items():
-        if (dataset.isna().any().any()):
-            raise Exception("Null values found in " + name)
-        
     # Remove players without a team
     dataset = removePlayersWithoutTeam(dataset)
 
@@ -90,6 +93,14 @@ def dataPreparation(dataset):
     # Fill missing values with 'none'
     dataset = fillWithNone(dataset)
 
+    #These functions are somehow breaking the entire dataset, keep commentated unless you find a fix
+
+    # Check for duplicated data
+    checkDuplicatedData(dataset)
+            
+    # # Check for null data
+    checkNullValue(dataset)
+        
     return dataset
     
     
