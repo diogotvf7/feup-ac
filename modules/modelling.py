@@ -99,12 +99,13 @@ def prepTrainingDataset(datasets):
     return dataset[columns_to_keep]
 
 def get_playoff_percentage(row, teams_post):
-        
-        relevant_years = teams_post[teams_post['year'] <= row['year']]
-        total_years = len(relevant_years['year'].unique())
-        playoff_appearances = len(relevant_years[relevant_years['tmID'] == row['tmID']])
+    
+    relevant_years = teams_post[teams_post['year'] <= (row['year'] - 1)]
+    total_years = len(relevant_years['year'].unique())
+    playoff_appearances = len(relevant_years[relevant_years['tmID'] == row['tmID']])
 
-        return (playoff_appearances / total_years).__round__(3)
+    return 0 if total_years == 0 else round(playoff_appearances / total_years, 3)
+
 
 def get_playoff_status(teams, teams_post):
 
