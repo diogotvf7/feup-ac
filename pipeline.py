@@ -50,7 +50,7 @@ def main():
     datasets = modelling(datasets)
 
     training_dataset = datasets['training_dataset']
-    training_dataset.to_csv('dataset/finals/training.csv', index = False)
+    # training_dataset.to_csv('dataset/finals/training.csv', index = False)
     
     #Pass teams_post and teams to know how many times a team went to the playoffs
     evaluate_dataset = create_final_dataset(datasets['teams_post'], datasets['teams'], datasets['players_teams'][datasets['players_teams']['year'] != 10])
