@@ -96,38 +96,35 @@ def teams_playoffs(teams_stats, teams_post_df, teams_df):
     return playoffs_percentage
 
 
-def create_final_dataset(teams_post_df, teams_df, players, target_year = 9):
-
+def create_final_dataset(teams_post_df, teams_df, players, target_year=9, aggregation_method='none'):
     s10 = pd.read_csv('dataset/finals/s10.csv') 
     rookie_avg_stats = calculate_avg_stats_rookie(players, 1)
 
-    #Fill information regarding rookies
     players = players.drop(columns=['tmID', 'GP', 'GS', 'minutes'])
     merged_data = pd.merge(s10, players, on='playerID', how='left')
     merged_data = merged_data.fillna(rookie_avg_stats)
 
+    if aggregation_method == 'fully_weighted':
+        merged_data['year_weight'] = merged_data['year'].apply(lambda y: 1 / (target_year - y + 1))
+        for stat in weighted_stats:
+            merged_data[stat] = merged_data[stat] * merged_data['year_weight']
+        player_avg = calculate_weighted_avg_player_stats(merged_data, weighted_stats)
 
-    ## FULLY WEIGHTED
-    """ merged_data['year_weight'] = merged_data['year'].apply(lambda y: 1 / (target_year - y  + 1))
-    for stat in weighted_stats:
-        merged_data[stat] = merged_data[stat] * merged_data['year_weight']
-    player_avg = calculate_weighted_avg_player_stats(merged_data, weighted_stats) """
-    
+    elif aggregation_method == 'fully_average':
+        player_avg = calculate_avg_player_stats(merged_data)
 
-    ##FULLY AVERAGE
-    player_avg = calculate_avg_player_stats(merged_data)
-    player_avg.to_csv('dataset/finals/player_avg.csv', index=False) 
+    elif aggregation_method == 'mixed':
+        mix_weighted = ['points', 'fgAttempted', 'ftAttempted']
+        mix_unweighted = ['fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage', 
+                          'rebounds_per_minute', 'steals_per_minute', 'blocks_per_minute', 'assists_per_minute', 
+                          'assist_turnover_ratio', 'effective_fg_percentage']
+        merged_data['year_weight'] = merged_data['year'].apply(lambda y: 1 / (target_year - y + 1))
+        for stat in mix_weighted:
+            merged_data[stat] = merged_data[stat] * merged_data['year_weight']
+        player_avg = calculate_mixed_avg_player_stats(merged_data, mix_weighted, mix_unweighted)
 
-    ## MIXED
-    """ mix_weighted = ['points', 'fgAttempted', 'ftAttempted']
-    mix_unweighted = ['fg_percentage', 'ft_percentage',
-                    'three_percentage', 'true_shooting_percentage', 'rebounds_per_minute',
-                    'steals_per_minute', 'blocks_per_minute', 'assists_per_minute',
-                    'assist_turnover_ratio', 'effective_fg_percentage']
-    merged_data['year_weight'] = merged_data['year'].apply(lambda y: 1 / (target_year - y  + 1))
-    for stat in weighted_stats:
-        merged_data[stat] = merged_data[stat] * merged_data['year_weight']
-    player_avg = calculate_mixed_avg_player_stats(merged_data, mix_weighted, mix_unweighted) """
+    else:  
+        player_avg = merged_data
 
     team_stats = player_avg.groupby('tmID').agg(aggregation_functions).reset_index()
     playoffs_percentage = teams_playoffs(team_stats, teams_post_df, teams_df)

@@ -7,7 +7,27 @@ def safe_divide(a,b, threshold = 0, default = 0):
 
 def prepPlayerData(dataset):
     # Only total rebounds is important
-    dataset.drop(columns=['oRebounds', 'dRebounds'], inplace=True)
+    dataset.drop(columns=['oRebounds', 'dRebounds', 'stint'], inplace=True)
+
+    ##DOING THIS TO MERGE PLAYERS WITH DIFFERENT STATS FOR THE SAME YEAR (BECAUSE DIFFERENT COACHES) + NO INTERMIDIATE AVERAGES PER PLAYER GAVE THE BEST RESULTS
+    dataset = dataset.groupby(['playerID', 'year'], as_index=False).agg({
+        'tmID': 'first',       
+        'GP': 'sum',           
+        'GS': 'sum',           
+        'minutes': 'sum',       
+        'points': 'sum',        
+        'fgMade': 'sum',        
+        'fgAttempted': 'sum',   
+        'ftMade': 'sum',        
+        'ftAttempted': 'sum',   
+        'threeMade': 'sum',     
+        'threeAttempted': 'sum',  
+        'rebounds': 'sum',      
+        'steals': 'sum',        
+        'blocks': 'sum',        
+        'assists': 'sum',       
+        'turnovers': 'sum'      
+    })
     min_fg_attempts = 5
 
     # Shooting Metrics
@@ -31,7 +51,7 @@ def prepPlayerData(dataset):
    
    
     columns_to_keep = [
-        'playerID', 'year', 'stint', 'tmID', 'GP', 'GS', 'minutes', 'points', 'fgAttempted', 'ftAttempted',
+        'playerID', 'year',  'tmID', 'GP', 'GS', 'minutes', 'points', 'fgAttempted', 'ftAttempted',
         'fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage',
         'rebounds_per_minute', 'steals_per_minute', 'blocks_per_minute', 'assists_per_minute',
         'assist_turnover_ratio', 'effective_fg_percentage'
