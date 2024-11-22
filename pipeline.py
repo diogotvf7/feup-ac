@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+from dataset_preparation.outliers_verification import handle_outliers
 
 # 1. Load data
 #
@@ -57,10 +58,13 @@ def main():
                                             datasets['teams'], 
                                             datasets['players_teams'][datasets['players_teams']['year'] != 10])
 
+    handle_outliers('points', datasets['players_teams'] )
+
+
     for model in models:
         print(f'FOR MODEL : {model}\n')
         for _ in range(1, 20):
-            evaluate(model, training_dataset, evaluate_dataset)
+            evaluate(model, training_dataset, evaluate_dataset)  
 
 
 if __name__ == "__main__":

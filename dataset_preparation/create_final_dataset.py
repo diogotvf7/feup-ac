@@ -35,19 +35,18 @@ stats = ['points',
         'assist_turnover_ratio',             
         'effective_fg_percentage']
 
-def calculate_avg_stats_rookie(players, target_year):
+def calculate_avg_stats_rookie(players, change_year=False):
 
     rookie_years = players.groupby('playerID')['year'].min().reset_index()
 
     rookies = players.merge(rookie_years, on=['playerID', 'year'])    
-    
     rookie_avg_stats = rookies[stats].mean()
 
     stats_to_round = ['points', 'fgAttempted', 'ftAttempted']
     rookie_avg_stats[stats_to_round] = rookie_avg_stats[stats_to_round].round()
-    rookie_avg_stats['year'] = target_year
-    rookie_avg_stats['stint'] = 0
-
+    if change_year:
+        rookie_avg_stats['year'] = 1
+        rookie_avg_stats['stint'] = 0
     return rookie_avg_stats.to_dict()
 
 
@@ -98,7 +97,7 @@ def teams_playoffs(teams_stats, teams_post_df, teams_df):
 
 def create_final_dataset(teams_post_df, teams_df, players, target_year=9, aggregation_method='none'):
     s10 = pd.read_csv('dataset/finals/s10.csv') 
-    rookie_avg_stats = calculate_avg_stats_rookie(players, 1)
+    rookie_avg_stats = calculate_avg_stats_rookie(players,  True)
 
     players = players.drop(columns=['tmID', 'GP', 'GS', 'minutes'])
     merged_data = pd.merge(s10, players, on='playerID', how='left')

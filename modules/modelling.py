@@ -1,6 +1,5 @@
 import pandas as pd
-from dataset_preparation.create_final_dataset import teams_playoffs
-
+from dataset_preparation.create_final_dataset import calculate_avg_stats_rookie
 
 def safe_divide(a,b, threshold = 0, default = 0):
     return a / b if b > threshold else default
@@ -49,7 +48,7 @@ def prepPlayerData(dataset):
     #turnovers cant be done individually :     https://sportsjourneysinternational.com/sji-coaches-corner/turnover-percentage-the-second-most-important-factor-of-basketball-success/#:~:text=The%20easiest%20way%20to%20look%20at%20the%20individual,provides%20a%20good%20baseline%20for%20your%20individual%20statistics.
     
    
-   
+    
     columns_to_keep = [
         'playerID', 'year',  'tmID', 'GP', 'GS', 'minutes', 'points', 'fgAttempted', 'ftAttempted',
         'fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage',
@@ -57,7 +56,18 @@ def prepPlayerData(dataset):
         'assist_turnover_ratio', 'effective_fg_percentage'
     ]
 
-    return dataset[columns_to_keep]
+
+    final_player = dataset[columns_to_keep]
+    rookie_stats = calculate_avg_stats_rookie(final_player)
+
+    rows_with_80_percent_zeros = (final_player == 0).sum(axis=1) >= 4
+    for idx in final_player.index[rows_with_80_percent_zeros]:
+        for column in rookie_stats:
+            final_player.loc[idx, column] = rookie_stats[column]
+
+    print(f"Replacing {rows_with_80_percent_zeros.sum()} rows where zero values exceed {0.8*100}% of the columns.\n")
+    
+    return final_player
 
 
 def prepTrainingDataset(datasets):
