@@ -5,9 +5,9 @@ import seaborn as sns
 def handle_outliers(attribute, dataset):
     outliers = detect_outlier_values(dataset[attribute])
     
-    print(f"Outliers for {attribute}:")
-    print(outliers)
-    print(f"Number of outliers in {attribute}: {len(outliers)}\n")
+    # print(f"Outliers for {attribute}:")
+    # print(outliers)
+    # print(f"Number of outliers in {attribute}: {len(outliers)}\n")
     
     # Create the box plot
     plt.figure(figsize=(10, 6))

@@ -72,17 +72,29 @@ def main():
             results[model] = evaluate_model(MODELS[model], training_dataset, evaluate_dataset)
         elif model == 'RandomForestClassifier' or model == 'SVC':
             results[model] = {}
-            max_precision1, max_precision2 = 0, 0
+            max_precision1, max_precision2, max_precision3, max_precision4, max_precision5, max_precision6 = 0, 0, 0, 0, 0, 0
             for _ in range(1, 20):
                 tmp = evaluate_model(MODELS[model], training_dataset, evaluate_dataset)
-                if tmp['without_feature_selection']['precision'] > max_precision1:
-                    max_precision1 = tmp['without_feature_selection']['precision']
-                    results[model]['without_feature_selection'] = tmp['without_feature_selection']
-                if tmp['with_feature_selection']['precision'] > max_precision2:
-                    max_precision2 = tmp['with_feature_selection']['precision']   
-                    results[model]['with_feature_selection'] = tmp['with_feature_selection']
+                if tmp['default']['precision'] > max_precision1:
+                    max_precision1 = tmp['default']['precision']
+                    results[model]['default'] = tmp['default']
+                if tmp['feature_selection[chi2]']['precision'] > max_precision2:
+                    max_precision2 = tmp['feature_selection[chi2]']['precision']   
+                    results[model]['feature_selection[chi2]'] = tmp['feature_selection[chi2]']
+                if tmp['feature_selection[f_regression]']['precision'] > max_precision3:
+                    max_precision3 = tmp['feature_selection[f_regression]']['precision']   
+                    results[model]['feature_selection[f_regression]'] = tmp['feature_selection[f_regression]']
+                if tmp['feature_selection[mutual_info_regression]']['precision'] > max_precision4:
+                    max_precision4 = tmp['feature_selection[mutual_info_regression]']['precision']   
+                    results[model]['feature_selection[mutual_info_regression]'] = tmp['feature_selection[mutual_info_regression]']
+                if tmp['feature_selection[mutual_info_classif]']['precision'] > max_precision5:
+                    max_precision5 = tmp['feature_selection[mutual_info_classif]']['precision']   
+                    results[model]['feature_selection[mutual_info_classif]'] = tmp['feature_selection[mutual_info_classif]']
+                if tmp['feature_selection[f_classif]']['precision'] > max_precision6:
+                    max_precision6 = tmp['feature_selection[f_classif]']['precision']   
+                    results[model]['feature_selection[f_classif]'] = tmp['feature_selection[f_classif]']
 
-    print(json.dumps(results, indent=4))
+    print('\033[31m', json.dumps(results, indent=8), '\033[39m')
 
 if __name__ == "__main__":
     main()
