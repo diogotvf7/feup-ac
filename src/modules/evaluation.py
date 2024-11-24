@@ -1,18 +1,30 @@
-correct_teams = ['IND', 'ATL', 'DET', 'SAS', 'PHO', 'SEA', 'LAS', 'WAS']
+from sklearn.feature_selection import RFE
+
+CORRECT_TEAMS = ['IND', 'ATL', 'DET', 'SAS', 'PHO', 'SEA', 'LAS', 'WAS']
 
 def calculate_precision(predicted_teams):
-    correct_predictions = len(set(predicted_teams) & set(correct_teams))
+    correct_predictions = len(set(predicted_teams) & set(CORRECT_TEAMS))
     precision = correct_predictions / len(predicted_teams)
     return precision
 
 
-def evaluate(model, training_dataset, evaluate_dataset):
+def feature_selection(model, training_dataset, evaluate_dataset):
+    # Feature Selection
+    rfe = RFE(model, n_features_to_select=10)
 
+    X_train_rfe = rfe.fit_transform(training_dataset, evaluate_dataset.columns)
+
+    print("\033[31mSelected features:\033[41m", training_dataset.columns[rfe.get_support()])
+
+def evaluate(model, training_dataset, evaluate_dataset):
     training_data_copy = training_dataset.copy()
     evaluate_data_copy = evaluate_dataset.copy()
 
     features_train = training_data_copy.drop(columns=['playoff'])
     target_train = training_data_copy['playoff']
+
+    # Feature Selection
+    # feature_selection(model, training_data_copy, evaluate_data_copy)
 
     model.fit(features_train, target_train)
 

@@ -5,13 +5,13 @@ from sklearn.linear_model import LinearRegression
 def dropColumns(dataset):
     dataset['awards_players'].drop(columns=['lgID'],  inplace = True)
     dataset['coaches'].drop(columns=['lgID'], inplace = True)
-    dataset['players_teams'].drop(columns=['lgID'], inplace = True)
+    dataset['players_teams'].drop(columns=['lgID', 'oRebounds', 'dRebounds', 'stint'], inplace = True) # Only total rebounds is important
     dataset['players'].drop(columns=['firstseason', 'lastseason'], inplace = True)
     dataset['series_post'].drop(columns=['lgIDWinner', 'lgIDLoser'], inplace = True)
     dataset['teams_post'].drop(columns=['lgID'], inplace = True)
     dataset['teams'].drop(columns=['lgID', 'divID', 'seeded','tmORB','tmDRB','tmTRB','opptmORB','opptmDRB','opptmTRB', 'arena'], inplace=True)
     
-    return dataset
+    return dataset    
 
 def checkDuplicates(dataset):
     for name, dataset in dataset.items():
@@ -69,16 +69,30 @@ def checkDuplicatedData(dataset):
 def checkNullValue(dataset):
     for name, data in dataset.items():
         if (data.isna().any().any()):
-            raise Exception("Null values found in " + name)    
-
-FUNCTIONS = [
-    dropColumns,
-    checkDuplicates,
-    checkNull,
-    removePlayersWithoutTeam,
-    # replaceMissingValues,
-    fillMissingWeights
-]
+            raise Exception("Null values found in " + name)
+            
+# When a player has multiple entries for the same year (e.g. change team mid-season), 
+# we aggregate the stats for that year into a single entry
+# This is done by summing the stats for that year. The teamID is taken from the first entry
+def merge_player_year_data(dataset): 
+    return dataset.groupby(['playerID', 'year'], as_index=False).agg({
+        'tmID': 'first',        
+        'GP': 'sum',            
+        'GS': 'sum',            
+        'minutes': 'sum',       
+        'points': 'sum',        
+        'fgMade': 'sum',        
+        'fgAttempted': 'sum',   
+        'ftMade': 'sum',        
+        'ftAttempted': 'sum',   
+        'threeMade': 'sum',     
+        'threeAttempted': 'sum',
+        'rebounds': 'sum',      
+        'steals': 'sum',        
+        'blocks': 'sum',        
+        'assists': 'sum',       
+        'turnovers': 'sum'      
+    })
 
 def dataPreparation(dataset):
     # Drop unwanted columns
@@ -93,12 +107,13 @@ def dataPreparation(dataset):
     # Fill missing values with 'none'
     dataset = fillWithNone(dataset)
 
-    #These functions are somehow breaking the entire dataset, keep commentated unless you find a fix
+    # Merge player year data
+    merge_player_year_data(dataset['players_teams'])
 
     # Check for duplicated data
     checkDuplicatedData(dataset)
             
-    # # Check for null data
+    # Check for null data
     checkNullValue(dataset)
         
     return dataset

@@ -23,17 +23,20 @@ from dataset_preparation.outliers_verification import handle_outliers
 #   - Evaluate model
 #   - Save model
 
-DATASETS = [
-    "dataset/awards_players.csv",
-    "dataset/coaches.csv",
-    "dataset/players_teams.csv",
-    "dataset/players.csv",
-    "dataset/series_post.csv",
-    "dataset/teams_post.csv",
-    "dataset/teams.csv"
-]
+DATASETS = {
+    "awards_players":   "dataset/awards_players.csv",
+    "coaches":          "dataset/coaches.csv",
+    "players_teams":    "dataset/players_teams.csv",
+    "players":          "dataset/players.csv",
+    "series_post":      "dataset/series_post.csv",
+    "teams_post":       "dataset/teams_post.csv",
+    "teams":            "dataset/teams.csv"
+}
 
-models = [
+TRAINING_YEARS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+EVALUATE_YEAR = 10
+
+MODELS = [
     LogisticRegression(max_iter=1000),
     RandomForestClassifier(n_estimators=100),
     SVC(probability=True),
@@ -42,13 +45,13 @@ models = [
 
 def main():
     # Data Load
-    datasets = loadLoad(DATASETS)
+    datasets = loadDatasets(DATASETS)
 
     # Data Preparation
     datasets = dataPreparation(datasets)
 
     # Modelling
-    datasets = modelling(datasets)
+    datasets = feature_engineering(datasets)
 
     training_dataset = datasets['training_dataset']
     # training_dataset.to_csv('dataset/finals/training.csv', index = False)
@@ -61,7 +64,7 @@ def main():
     handle_outliers('points', datasets['players_teams'] )
 
 
-    for model in models:
+    for model in MODELS:
         print(f'FOR MODEL : {model}\n')
         for _ in range(1, 20):
             evaluate(model, training_dataset, evaluate_dataset)  
