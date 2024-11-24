@@ -82,7 +82,6 @@ def prepTrainingDataset(teams, teams_post):
     return teams[columns_to_keep]
 
 def get_playoff_percentage(row, teams_post):
-    
     relevant_years = teams_post[teams_post['year'] <= (row['year'] - 1)]
     total_years = len(relevant_years['year'].unique())
     playoff_appearances = len(relevant_years[relevant_years['tmID'] == row['tmID']])
@@ -91,7 +90,6 @@ def get_playoff_percentage(row, teams_post):
 
 
 def get_playoff_status(teams, teams_post):
-
     teams_playoffs = pd.merge(teams, teams_post, how='left', left_on=['year', 'tmID'], right_on=['year', 'tmID'], indicator=True)
     teams_playoffs['playoff'] = (teams_playoffs['_merge'] == 'both').astype(int)
     teams_playoffs.drop(columns=['_merge'], inplace=True)

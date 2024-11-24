@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from dataset_preparation.outliers_verification import handle_outliers
+import json
 
 # 1. Load data
 #
@@ -36,12 +37,12 @@ DATASETS = {
 TRAINING_YEARS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 EVALUATE_YEAR = 10
 
-MODELS = [
-    LogisticRegression(max_iter=1000),
-    RandomForestClassifier(n_estimators=100),
-    SVC(probability=True),
-    KNeighborsClassifier(n_neighbors=5)
-]
+MODELS = {
+    'LogisticRegression': LogisticRegression(max_iter=1000),
+    'RandomForestClassifier': RandomForestClassifier(n_estimators=100),
+    'SVC': SVC(probability=True),
+    'KNeighborsClassifier': KNeighborsClassifier(n_neighbors=5)
+}
 
 def main():
     # Data Load
@@ -63,12 +64,25 @@ def main():
 
     handle_outliers('points', datasets['players_teams'] )
 
+    # results = evaluate_models(training_dataset, evaluate_dataset)
 
+    results = {}
     for model in MODELS:
-        print(f'FOR MODEL : {model}\n')
-        for _ in range(1, 20):
-            evaluate(model, training_dataset, evaluate_dataset)  
+        if model == 'LogisticRegression' or model == 'KNeighborsClassifier':
+            results[model] = evaluate_model(MODELS[model], training_dataset, evaluate_dataset)
+        elif model == 'RandomForestClassifier' or model == 'SVC':
+            results[model] = {}
+            max_precision1, max_precision2 = 0, 0
+            for _ in range(1, 20):
+                tmp = evaluate_model(MODELS[model], training_dataset, evaluate_dataset)
+                if tmp['without_feature_selection']['precision'] > max_precision1:
+                    max_precision1 = tmp['without_feature_selection']['precision']
+                    results[model]['without_feature_selection'] = tmp['without_feature_selection']
+                if tmp['with_feature_selection']['precision'] > max_precision2:
+                    max_precision2 = tmp['with_feature_selection']['precision']   
+                    results[model]['with_feature_selection'] = tmp['with_feature_selection']
 
+    print(json.dumps(results, indent=4))
 
 if __name__ == "__main__":
     main()

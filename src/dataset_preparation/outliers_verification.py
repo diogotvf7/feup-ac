@@ -21,7 +21,7 @@ def handle_outliers(attribute, dataset):
     plt.legend(loc='upper right')
     plt.title(f'Box Plot of {attribute} (Outliers Highlighted)')
     plt.xlabel(attribute)
-    plt.show() 
+    # plt.show() 
 
 def detect_outlier_values(data):
     Q1 = data.quantile(0.25)
