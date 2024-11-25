@@ -47,24 +47,33 @@ MODELS = {
 def main():
     # Data Load
     datasets = loadDatasets(DATASETS)
+    print('[\033[92m✓\033[39m] Dataset load')
 
     # Data Preparation
     datasets = dataPreparation(datasets)
+    print('[\033[92m✓\033[39m] Dataset preparation')
 
     # Modelling
     datasets = feature_engineering(datasets)
+    print('[\033[92m✓\033[39m] Feature engineering')
 
     training_dataset = datasets['training_dataset']
     # training_dataset.to_csv('dataset/finals/training.csv', index = False)
     
-    #Pass teams_post and teams to know how many times a team went to the playoffs
-    evaluate_dataset = create_final_dataset(datasets['teams_post'], 
-                                            datasets['teams'], 
-                                            datasets['players_teams'][datasets['players_teams']['year'] != 10])
+    # Pass teams_post and teams to know how many times a team went to the playoffs
+    evaluate_dataset = create_final_dataset(
+        datasets['coaches_data'],
+        datasets['teams_post'], 
+        datasets['teams'], 
+        datasets['players_teams'][datasets['players_teams']['year'] != 10]
+    )
+    print('[\033[92m✓\033[39m] Evaluate dataset creation')
 
-    handle_outliers('points', datasets['players_teams'] )
+    handle_outliers('points', datasets['players_teams'])
+    print('[\033[92m✓\033[39m] Outliers handling')
 
-    # results = evaluate_models(training_dataset, evaluate_dataset)
+    print("Training dataset shape: ", training_dataset.columns)
+    print("Evaluate dataset shape: ", evaluate_dataset.columns)
 
     results = {}
     for model in MODELS:
@@ -93,8 +102,8 @@ def main():
                 if tmp['feature_selection[f_classif]']['precision'] > max_precision6:
                     max_precision6 = tmp['feature_selection[f_classif]']['precision']   
                     results[model]['feature_selection[f_classif]'] = tmp['feature_selection[f_classif]']
-
-    print('\033[31m', json.dumps(results, indent=8), '\033[39m')
+        print(f'[\033[92m✓\033[39m] {model} model evaluation')
+    print(json.dumps(results, indent=8))
 
 if __name__ == "__main__":
     main()

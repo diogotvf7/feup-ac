@@ -1,11 +1,11 @@
 import pandas as pd
 
-weighted_stats = ['points', 'fgAttempted', 'ftAttempted', 'fg_percentage', 'ft_percentage',
+WEIGHTED_STATS = ['points', 'fgAttempted', 'ftAttempted', 'fg_percentage', 'ft_percentage',
                     'three_percentage', 'true_shooting_percentage', 'rebounds_per_minute',
                     'steals_per_minute', 'blocks_per_minute', 'assists_per_minute',
                     'assist_turnover_ratio', 'effective_fg_percentage']
 
-aggregation_functions = {        
+AGGREGATION_FUNCTIONS = {        
     'points': 'sum',           
     'fgAttempted': 'sum',      
     'ftAttempted': 'sum',      
@@ -21,26 +21,26 @@ aggregation_functions = {
     'effective_fg_percentage': 'mean',  
 }
 
-stats = ['points',                          
-        'fgAttempted',                     
-        'ftAttempted',                      
-        'fg_percentage',                    
-        'ft_percentage', 
-        'three_percentage', 
-        'true_shooting_percentage', 
-        'rebounds_per_minute',
-        'steals_per_minute', 
-        'blocks_per_minute', 
-        'assists_per_minute', 
-        'assist_turnover_ratio',             
-        'effective_fg_percentage']
+STATS = ['points',                          
+    'fgAttempted',                     
+    'ftAttempted',                      
+    'fg_percentage',                    
+    'ft_percentage', 
+    'three_percentage', 
+    'true_shooting_percentage', 
+    'rebounds_per_minute',
+    'steals_per_minute', 
+    'blocks_per_minute', 
+    'assists_per_minute', 
+    'assist_turnover_ratio',             
+    'effective_fg_percentage']
 
 def calculate_avg_stats_rookie(players, change_year=False):
 
     rookie_years = players.groupby('playerID')['year'].min().reset_index()
 
     rookies = players.merge(rookie_years, on=['playerID', 'year'])    
-    rookie_avg_stats = rookies[stats].mean()
+    rookie_avg_stats = rookies[STATS].mean()
 
     stats_to_round = ['points', 'fgAttempted', 'ftAttempted']
     rookie_avg_stats[stats_to_round] = rookie_avg_stats[stats_to_round].round()
@@ -61,7 +61,7 @@ def calculate_weighted_avg_player_stats(merged_data, weighted_stats):
     return weighted_data
 
 def calculate_avg_player_stats(merged_data):
-    avg_data = merged_data.groupby(['playerID', 'tmID'])[stats].mean().reset_index()
+    avg_data = merged_data.groupby(['playerID', 'tmID'])[STATS].mean().reset_index()
     return avg_data
 
 
@@ -94,20 +94,26 @@ def teams_playoffs(teams_stats, teams_post_df, teams_df):
 
     return playoffs_percentage
 
+def calculate_new_coach_avg_stats(coaches):
+    coach_avg_stats = coaches.groupby('coachID')[["average_wins", "average_losses", "weighted_win_ratio", "playoff_attendance", "coach_consistency"]].mean()
+    return coach_avg_stats.to_dict()
 
-def create_final_dataset(teams_post_df, teams_df, players, target_year=9, aggregation_method='none'):
+def create_final_dataset(coaches_df, teams_post_df, teams_df, players, target_year=9, aggregation_method='none'):
     s10 = pd.read_csv('dataset/finals/s10.csv') 
-    rookie_avg_stats = calculate_avg_stats_rookie(players,  True)
+    new_coach_avg_stats = calculate_new_coach_avg_stats(coaches_df)
+    new_player_avg_stats = calculate_avg_stats_rookie(players, True)
 
     players = players.drop(columns=['tmID', 'GP', 'GS', 'minutes'])
     merged_data = pd.merge(s10, players, on='playerID', how='left')
-    merged_data = merged_data.fillna(rookie_avg_stats)
+    merged_data = merged_data.fillna(new_player_avg_stats)
+    merged_data = merged_data.merge(coaches_df, on='coachID', how='left')
+    merged_data = merged_data.fillna(new_coach_avg_stats)
 
     if aggregation_method == 'fully_weighted':
         merged_data['year_weight'] = merged_data['year'].apply(lambda y: 1 / (target_year - y + 1))
-        for stat in weighted_stats:
+        for stat in WEIGHTED_STATS:
             merged_data[stat] = merged_data[stat] * merged_data['year_weight']
-        player_avg = calculate_weighted_avg_player_stats(merged_data, weighted_stats)
+        player_avg = calculate_weighted_avg_player_stats(merged_data, WEIGHTED_STATS)
 
     elif aggregation_method == 'fully_average':
         player_avg = calculate_avg_player_stats(merged_data)
@@ -125,10 +131,9 @@ def create_final_dataset(teams_post_df, teams_df, players, target_year=9, aggreg
     else:  
         player_avg = merged_data
 
-    team_stats = player_avg.groupby('tmID').agg(aggregation_functions).reset_index()
+    team_stats = player_avg.groupby('tmID').agg(AGGREGATION_FUNCTIONS).reset_index()
     playoffs_percentage = teams_playoffs(team_stats, teams_post_df, teams_df)
 
     team_stats['playoffs_percentage'] = team_stats['tmID'].map(playoffs_percentage)
     team_stats.to_csv('dataset/finals/s10_team_stats.csv', index=False)
     return team_stats
-
