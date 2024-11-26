@@ -14,6 +14,23 @@ def feature_selection(features, target, score_function, k=10):
     selected_features = features.columns[select_k_best.get_support()].tolist()
     return selected_features
 
+def calculate_error(evaluate_data):
+    data = evaluate_data.copy()
+    data['playoff_probability'] = data['playoff_probability'] * 100
+    data['playoff_probability'] = data['playoff_probability'] * 8 / data['playoff_probability'].sum()
+
+    error = 0
+    # iterate data variable
+    for row in data.iterrows():
+        is_in_playoffs = row[1]['tmID'] in CORRECT_TEAMS
+        error += abs(is_in_playoffs - row[1]['playoff_probability'])  
+        
+    return error
+
+    # return CORRECT_TEAMS.map(
+        # lambda team: abs(data.loc[data['tmID'] == team, 'playoff_probability'].values[0] - 1)
+    # )
+
 def evaluate(model, training_dataset, evaluate_dataset, score_function=None):
     training_data_copy = training_dataset.copy()
     evaluate_data_copy = evaluate_dataset.copy()
@@ -34,6 +51,9 @@ def evaluate(model, training_dataset, evaluate_dataset, score_function=None):
     # Predict probabilities
     playoff_probabilities = model.predict_proba(evaluate_features)[:, 1]
     evaluate_data_copy['playoff_probability'] = playoff_probabilities
+
+    error = calculate_error(evaluate_data_copy[['tmID', 'playoff_probability']])
+
     
     top_8_teams = evaluate_data_copy[['tmID', 'playoff_probability']].sort_values(by='playoff_probability', ascending=False).head(8)
     #print("Predicted top 8 teams:\n", top_8_teams)
@@ -45,7 +65,8 @@ def evaluate(model, training_dataset, evaluate_dataset, score_function=None):
 
     return {
         'predicted_teams': predicted_teams, 
-        'precision': precision
+        'precision': precision,
+        'error': error
     }
 
 def evaluate_model(model, training_dataset, evaluate_dataset):

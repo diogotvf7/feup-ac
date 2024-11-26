@@ -382,6 +382,7 @@ def build_report(json_data):
             for fs, result in results.items():
                 write(f, "###", fs)
                 write(f, "- `Precision:`", result['precision'])
+                write(f, "- `Error:`", result['error'])
                 write(f, "- `Predicted teams:`", ', '.join(result['predicted_teams']))
 
 if __name__ == "__main__":
