@@ -1,4 +1,5 @@
 from modules import *
+from build_report import build_report
 from dataset_preparation.create_final_dataset import create_final_dataset
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -103,7 +104,8 @@ def main():
                     max_precision6 = tmp['feature_selection[f_classif]']['precision']   
                     results[model]['feature_selection[f_classif]'] = tmp['feature_selection[f_classif]']
         print(f'[\033[92m✓\033[39m] {model} model evaluation')
-    print(json.dumps(results, indent=8))
+
+    build_report(results)
 
 if __name__ == "__main__":
     main()
