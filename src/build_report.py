@@ -384,7 +384,13 @@ def build_report(json_data):
                 write(f, "- `Precision:`", result['precision'])
                 write(f, "- `Error:`", result['error'])
                 write(f, "- `Predicted teams:`", ', '.join(result['predicted_teams']))
-                write(f, f"![{result['confusion_matrix']}]({result['confusion_matrix']})")
 
+                write(f, "<details>")
+                write(f, "<summary>Confusion Matrix</summary>")
+                write(f, "<br>\n")
+                write(f, f"![{result['confusion_matrix']}]({result['confusion_matrix']})")
+                write(f, "</details>\n")
+
+                
 if __name__ == "__main__":
     build_report(JSON_DATA)
