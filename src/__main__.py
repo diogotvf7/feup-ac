@@ -1,4 +1,5 @@
 from modules import *
+from build_report import build_report
 from dataset_preparation.create_final_dataset import create_final_dataset
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -69,11 +70,12 @@ def main():
     )
     print('[\033[92m✓\033[39m] Evaluate dataset creation')
 
+    # Outliers handling
     handle_outliers('points', datasets['players_teams'])
     print('[\033[92m✓\033[39m] Outliers handling')
 
-    print("Training dataset shape: ", training_dataset.columns)
-    print("Evaluate dataset shape: ", evaluate_dataset.columns)
+    # print("Training dataset shape: ", training_dataset.columns)
+    # print("Evaluate dataset shape: ", evaluate_dataset.columns)
 
     results = {}
     for model in MODELS:
@@ -87,23 +89,24 @@ def main():
                 if tmp['default']['precision'] > max_precision1:
                     max_precision1 = tmp['default']['precision']
                     results[model]['default'] = tmp['default']
-                if tmp['feature_selection[chi2]']['precision'] > max_precision2:
-                    max_precision2 = tmp['feature_selection[chi2]']['precision']   
-                    results[model]['feature_selection[chi2]'] = tmp['feature_selection[chi2]']
-                if tmp['feature_selection[f_regression]']['precision'] > max_precision3:
-                    max_precision3 = tmp['feature_selection[f_regression]']['precision']   
-                    results[model]['feature_selection[f_regression]'] = tmp['feature_selection[f_regression]']
-                if tmp['feature_selection[mutual_info_regression]']['precision'] > max_precision4:
-                    max_precision4 = tmp['feature_selection[mutual_info_regression]']['precision']   
-                    results[model]['feature_selection[mutual_info_regression]'] = tmp['feature_selection[mutual_info_regression]']
-                if tmp['feature_selection[mutual_info_classif]']['precision'] > max_precision5:
-                    max_precision5 = tmp['feature_selection[mutual_info_classif]']['precision']   
-                    results[model]['feature_selection[mutual_info_classif]'] = tmp['feature_selection[mutual_info_classif]']
-                if tmp['feature_selection[f_classif]']['precision'] > max_precision6:
-                    max_precision6 = tmp['feature_selection[f_classif]']['precision']   
-                    results[model]['feature_selection[f_classif]'] = tmp['feature_selection[f_classif]']
+                if tmp['chi2']['precision'] > max_precision2:
+                    max_precision2 = tmp['chi2']['precision']   
+                    results[model]['chi2'] = tmp['chi2']
+                if tmp['f_regression']['precision'] > max_precision3:
+                    max_precision3 = tmp['f_regression']['precision']   
+                    results[model]['f_regression'] = tmp['f_regression']
+                if tmp['mutual_info_regression']['precision'] > max_precision4:
+                    max_precision4 = tmp['mutual_info_regression']['precision']   
+                    results[model]['mutual_info_regression'] = tmp['mutual_info_regression']
+                if tmp['mutual_info_classif']['precision'] > max_precision5:
+                    max_precision5 = tmp['mutual_info_classif']['precision']   
+                    results[model]['mutual_info_classif'] = tmp['mutual_info_classif']
+                if tmp['f_classif']['precision'] > max_precision6:
+                    max_precision6 = tmp['f_classif']['precision']   
+                    results[model]['f_classif'] = tmp['f_classif']
         print(f'[\033[92m✓\033[39m] {model} model evaluation')
-    print(json.dumps(results, indent=8))
+
+    build_report(results)
 
 if __name__ == "__main__":
     main()

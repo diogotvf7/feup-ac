@@ -58,9 +58,9 @@ def evaluate_model(model, training_dataset, evaluate_dataset):
     
     return {
         'default': default, 
-        'feature_selection[chi2]': feature_selection_chi2,
-        'feature_selection[f_regression]': feature_selection_f_regression,
-        'feature_selection[mutual_info_regression]': feature_selection_mutual_info_regression,
-        'feature_selection[mutual_info_classif]': feature_selection_mutual_info_classif,
-        'feature_selection[f_classif]': feature_selection_f_classif,
+        'chi2': feature_selection_chi2,
+        'f_regression': feature_selection_f_regression,
+        'mutual_info_regression': feature_selection_mutual_info_regression,
+        'mutual_info_classif': feature_selection_mutual_info_classif,
+        'f_classif': feature_selection_f_classif,
     }
