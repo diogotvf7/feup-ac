@@ -344,7 +344,7 @@ def write(file, *content, newline="\n", separator=" "):
     content = map(str, content)
     file.write(separator.join(content) + newline)
 
-def build_report(json_data):
+def report(json_data):
     repo = Repo(REPO_PATH)
     commit = repo.head.commit
     branch = repo.active_branch
@@ -391,6 +391,21 @@ def build_report(json_data):
                 write(f, f"![{result['confusion_matrix']}]({result['confusion_matrix']})")
                 write(f, "</details>\n")
 
+def display_result(best, correct):
+        print('\n\n')
+        print("________________________________________________________________________")
+        print(f"Result:\n\n         Error: {best['error']}\n     Correct %: {best['correct'] / 8 * 100}\n         Guess: {best['guess']}")
+        print(f"       Correct: {correct}")
+        print("________________________________________________________________________")
+        
+        for i, (index, row) in enumerate(best['result'].sort_values(by='Playoff', ascending=False).iterrows()):            
+            if (i + 1 <= 8): 
+                print("\033[92m", end='')
+            print(f"{i+1:<3}         {row['tmID']:<5} - {row['Playoff']:<6}    {'\033[92m✓\033[39m' if ((i+1 <= 8) == (row['tmID'] in correct)) else '\033[91m✗\033[39m'}")
+            print("\033[39m", end='')
+            if (i + 1 == 8):
+                print("_______________________________")
+        
                 
 if __name__ == "__main__":
-    build_report(JSON_DATA)
+    report(JSON_DATA)

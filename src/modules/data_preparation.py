@@ -93,6 +93,19 @@ def merge_player_year_data(dataset):
         'assists': 'sum',       
         'turnovers': 'sum'      
     })
+    
+def prepare_competition_data(dataset):
+    coaches = dataset['coaches']
+    teams = dataset['teams']
+    player_teams = dataset['players_teams']
+    
+    # Merge coaches and teams
+    coaches_teams = pd.merge(coaches, teams, on=['tmID', 'year', 'lgID'], how='left')
+    
+    # Merge player_teams with coaches_teams
+    competition_data = pd.merge(player_teams, coaches_teams, on=['tmID', 'year', 'stint', 'lgID'], how='left')
+    
+    return competition_data[['playerID','tmID','coachID']]
 
 def dataPreparation(dataset):
     # Drop unwanted columns

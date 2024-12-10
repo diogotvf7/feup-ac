@@ -28,8 +28,10 @@ def player_feature_engineering(dataset):
     #turnovers cant be done individually :     https://sportsjourneysinternational.com/sji-coaches-corner/turnover-percentage-the-second-most-important-factor-of-basketball-success/#:~:text=The%20easiest%20way%20to%20look%20at%20the%20individual,provides%20a%20good%20baseline%20for%20your%20individual%20statistics.
     
     columns_to_keep = [
-        'playerID', 'year',  'tmID', 'GP', 'GS', 'minutes', 'points', 'fgAttempted', 'ftAttempted',
-        'fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage',
+        'playerID', 'year',  'tmID', 'GP', 'GS', 'minutes', 'points', 'fgAttempted', 
+        'ftAttempted',
+        'fg_percentage', 
+        'ft_percentage', 'three_percentage', 'true_shooting_percentage',
         'rebounds_per_minute', 'steals_per_minute', 'blocks_per_minute', 'assists_per_minute',
         'assist_turnover_ratio', 'effective_fg_percentage'
     ]
@@ -47,7 +49,7 @@ def player_feature_engineering(dataset):
     return final_player
 
 
-def prepTrainingDataset(teams, teams_post):    
+def prepTrainingDataset(teams, teams_post, coaches):    
     # Shooting Metrics
     teams['fg_percentage'] = teams.apply(lambda row: safe_divide(row['o_fgm'], row['o_fga']), axis=1)
     teams['ft_percentage'] = teams.apply(lambda row: safe_divide(row['o_ftm'], row['o_fta']), axis=1)
@@ -65,26 +67,77 @@ def prepTrainingDataset(teams, teams_post):
     teams['fgAttempted'] = teams['o_fga']
     teams['ftAttempted'] = teams ['o_fta']
 
-
+    teams['team_weighted_playoff_attendance'] = teams.apply(
+        lambda row: team_weighted_playoff_attendance(row, teams_post, teams),
+        axis=1
+    )
+    
+    coach_aggregates = coaches.groupby('coachID').agg(
+        total_wins=('won', 'sum'),
+        total_losses=('lost', 'sum'),
+        average_wins=('won', 'mean'),
+        average_losses=('lost', 'mean'),
+        total_post_wins=('post_wins', 'sum'),
+        total_post_losses=('post_losses', 'sum'),
+    ).reset_index()
+    
+    coach_aggregates['coach_weighted_win_ratio'] = coach_aggregates.apply(
+        lambda row: safe_divide(
+            row['total_wins'] + POST_WIN_WEIGHT * row['total_post_wins'], 
+            row['total_wins'] + row['total_losses'] + row['total_post_wins'] + row['total_post_losses']
+        ), 
+        axis=1
+    )
+    
+    coach_aggregates['coach_playoff_attendance'] = coach_aggregates.apply(
+        lambda row: coach_playoff_attendance(row, coaches),
+        axis=1
+    )
+    
+    coach_aggregates['coach_consistency'] = coach_aggregates.apply(
+        lambda row: coach_consistency(row, coaches),
+        axis=1
+    )        
+    
+    # for each year of the team, append the coach data of the last coach on that year
+    for i, row in teams.iterrows():
+        year = row['year']
+        tmID = row['tmID']
+        last_coach = coaches[(coaches['year'] == year) & (coaches['tmID'] == row['tmID'])].iloc[-1]
+        teams.loc[(teams['year'] == year) & (teams['tmID'] == tmID), 'coachID'] = last_coach['coachID']
+        
+    teams = pd.merge(teams, coach_aggregates, on='coachID', how='left')
+        
     #https://www.teamrankings.com/nba/player/nikola-jokic
     teams['effective_fg_percentage'] = teams.apply(lambda row: safe_divide(row['o_fgm'] + 0.5 * row['o_3pm'], row['o_fga']), axis=1)
     #turnovers cant be done individually :     https://sportsjourneysinternational.com/sji-coaches-corner/turnover-percentage-the-second-most-important-factor-of-basketball-success/#:~:text=The%20easiest%20way%20to%20look%20at%20the%20individual,provides%20a%20good%20baseline%20for%20your%20individual%20statistics.
     # dataset['turnover_percentage'] = dataset.apply(lambda row: safe_divide(row['o_to'], (row['o_fga']- row['o_oreb'])) + row['o_to'] + (row['o_fta']*0.475))
     
-    teams = teams.drop(teams[teams.year == 10].index)
-
     columns_to_keep = [
-        'points', 'fgAttempted', 'ftAttempted',
-        'fg_percentage', 'ft_percentage', 'three_percentage', 'true_shooting_percentage',
-        'rebounds_per_minute', 'steals_per_minute', 'blocks_per_minute', 'assists_per_minute', 'assist_turnover_ratio',
-        'effective_fg_percentage', 'playoffs_percentage', 'playoff'
+        'points', 
+        'fgAttempted', 
+        'ftAttempted',
+        'fg_percentage', 
+        'ft_percentage', 
+        'three_percentage', 
+        'true_shooting_percentage',
+        'rebounds_per_minute', 
+        'steals_per_minute', 
+        'blocks_per_minute', 
+        'assists_per_minute', 
+        'assist_turnover_ratio',
+        'effective_fg_percentage', 
+        'playoffs_percentage', 
+        'team_weighted_playoff_attendance',
+        'coach_weighted_win_ratio', 
+        'coach_playoff_attendance', 
+        'coach_consistency',
+        'playoff'
     ]
 
     return teams[columns_to_keep]
 
 def coaches_feature_engineering(coaches):
-    # remove 10th year
-    coaches = coaches[coaches['year'] != 10]
     
     coach_aggregates = coaches.groupby('coachID').agg(
         total_wins=('won', 'sum'),
@@ -96,7 +149,7 @@ def coaches_feature_engineering(coaches):
     ).reset_index()
 
     # Weighted Win Ratio - wins / (wins + losses) - post season wins value more
-    coach_aggregates['weighted_win_ratio'] = coach_aggregates.apply(
+    coach_aggregates['coach_weighted_win_ratio'] = coach_aggregates.apply(
         lambda row: 
             safe_divide(
                 row['total_wins'] + POST_WIN_WEIGHT * row['total_post_wins'], 
@@ -105,7 +158,7 @@ def coaches_feature_engineering(coaches):
             axis=1
     )
     # Playoff Attendance - percentage of seasons where coach made it to the playoffs
-    coach_aggregates['playoff_attendance'] = coach_aggregates.apply(
+    coach_aggregates['coach_playoff_attendance'] = coach_aggregates.apply(
         lambda row: 
             coach_playoff_attendance(row, coaches),
             axis=1
@@ -115,16 +168,19 @@ def coaches_feature_engineering(coaches):
         lambda row: coach_consistency(row, coaches),
         axis=1
     )
-
+    
     columns_to_keep = [
-        "coachID", "average_wins", "average_losses", "weighted_win_ratio", "playoff_attendance", "coach_consistency"
+        "coachID", "coach_weighted_win_ratio", "coach_playoff_attendance", "coach_consistency"
     ]
 
     return coach_aggregates[columns_to_keep]
 
 def coach_consistency(row, coaches):
     coach_seasons = coaches[coaches['coachID'] == row['coachID']]
-    return coach_seasons['won'].std() if not coach_seasons.empty else 0
+    if len(coach_seasons) > 1:
+        return coach_seasons['won'].std()
+    else:
+        return 0
 
 def coach_playoff_attendance(row, coaches):
     total_seasons = len(coaches[coaches['coachID'] == row['coachID']])
@@ -149,9 +205,89 @@ def get_playoff_status(teams, teams_post):
     return teams_playoffs['playoff']
     
 
+def team_playoffs_consistency(row, teams_post, teams):
+    team_seasons = teams[teams['tmID'] == row['tmID']]
+    teams_playoffs_seasons = teams_post[teams_post['tmID'] == row['tmID']] 
+
+    merged = pd.merge(team_seasons, teams_playoffs_seasons, how='left', left_on=['year', 'tmID'], right_on=['year', 'tmID'], indicator=True)
+    merged['playoff'] = (merged['_merge'] == 'both').astype(int)
+    merged.drop(columns=['_merge'], inplace=True)
+    
+    if len(merged) > 1:
+        return merged['playoff'].std()
+    else:
+        return 0
+
+def team_weighted_playoff_attendance(row, teams_post, teams, YEAR_WEIGHT=10):
+    # value the attendence of playoffs of the higher years more
+    team_seasons = teams[teams['tmID'] == row['tmID']]
+    team_seasons['year_weight'] = team_seasons['year'].apply(lambda x: 1 + (x * YEAR_WEIGHT))
+    
+    team_seasons['weighted_playoffs'] = team_seasons['year_weight'] * team_seasons['playoff']
+    
+    total_playoffs = team_seasons['weighted_playoffs'].sum()
+    total_years = team_seasons['year_weight'].sum()
+    
+    return safe_divide(total_playoffs, total_years)
+    
+def team_progression(row, teams_post, POST_WIN_WEIGHT=1.5, YEAR_WEIGHT=10):
+    team_seasons = teams_post[teams_post['tmID'] == row['tmID']]
+    team_seasons['year_weight'] = team_seasons['year'].apply(lambda x: 1 + (x * YEAR_WEIGHT))
+    
+    team_seasons['weighted_wins'] = team_seasons['W'] * team_seasons['year_weight']
+    team_seasons['weighted_losses'] = team_seasons['L'] * team_seasons['year_weight']
+    
+    total_wins = team_seasons['weighted_wins'].sum()
+    total_losses = team_seasons['weighted_losses'].sum()
+    
+    return safe_divide(total_wins, total_wins + total_losses)
+
+def team_feature_engineering(dataset):
+    teams = dataset['teams'].copy()
+    teams_post = dataset['teams_post'].copy()
+
+    team_aggregates = teams.groupby('tmID').agg(
+        total_wins=('won', 'sum'),
+        total_losses=('lost', 'sum'),
+        average_wins=('won', 'mean'),
+        average_losses=('lost', 'mean'),
+    ).reset_index()
+    
+    team_aggregates['team_playoffs_consistency'] = team_aggregates.apply(
+        lambda row: team_playoffs_consistency(row, teams_post, teams),
+        axis=1
+    )
+    
+    team_aggregates['team_weighted_playoff_attendance'] = team_aggregates.apply(
+        lambda row: team_weighted_playoff_attendance(row, teams_post, teams),
+        axis=1
+    )
+        
+    team_aggregates['team_win_percentage'] = team_aggregates.apply(
+        lambda row: safe_divide(row['total_wins'], row['total_wins'] + row['total_losses']),
+        axis=1
+    )
+    
+    team_aggregates['team_progression'] = team_aggregates.apply(
+        lambda row: team_progression(row, teams_post),
+        axis=1
+    )
+
+    columns_to_keep = [
+        'tmID', 
+        'team_playoffs_consistency', 
+        'team_weighted_playoff_attendance', 
+        'team_win_percentage',
+        'team_progression'
+    ]
+    
+    return team_aggregates[columns_to_keep]
+
+
 def feature_engineering(dataset):
     dataset['coaches_data'] = coaches_feature_engineering(dataset['coaches'])
     dataset['players_teams'] = player_feature_engineering(dataset['players_teams'])
-    dataset['training_dataset'] = prepTrainingDataset(dataset['teams'], dataset['teams_post'])
-
+    dataset['training_dataset'] = prepTrainingDataset(dataset['teams'], dataset['teams_post'], dataset['coaches'])
+    dataset['teams_data'] = team_feature_engineering(dataset)
+    
     return dataset

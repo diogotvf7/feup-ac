@@ -1,53 +1,63 @@
 from modules import *
-from build_report import build_report
 from dataset_preparation.create_final_dataset import create_final_dataset
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from dataset_preparation.outliers_verification import handle_outliers
+import pandas as pd
 import json
+from sklearn.feature_selection import SelectKBest, chi2, f_regression, mutual_info_regression, mutual_info_classif, f_classif
+from build_report import display_result
 
-# 1. Load data
-#
-# 2. Preprocess data
-#   - Manage missing values
-#
-# 3. Feature engineering
-#   - Deduct new features
-#   - 
-#
-# 4. Train model
-#   - Split data
-#   - Train model
-#
-# 5. Evaluate model
-#   - Evaluate model
-#   - Save model
 
+SOLUTIONS = ['IND', 'ATL', 'DET', 'SAS', 'PHO', 'SEA', 'LAS', 'WAS']
+
+PATH = 'dataset/competition'
+PATH = 'dataset/train'
+
+
+
+CORRECT_TEAMS = SOLUTIONS if PATH == 'dataset/train' else []
 DATASETS = {
-    "awards_players":   "dataset/awards_players.csv",
-    "coaches":          "dataset/coaches.csv",
-    "players_teams":    "dataset/players_teams.csv",
-    "players":          "dataset/players.csv",
-    "series_post":      "dataset/series_post.csv",
-    "teams_post":       "dataset/teams_post.csv",
-    "teams":            "dataset/teams.csv"
+    "awards_players":   f"{PATH}/train/awards_players.csv",
+    "coaches":          f"{PATH}/train/coaches.csv",
+    "players_teams":    f"{PATH}/train/players_teams.csv",
+    "players":          f"{PATH}/train/players.csv",
+    "series_post":      f"{PATH}/train/series_post.csv",
+    "teams_post":       f"{PATH}/train/teams_post.csv",
+    "teams":            f"{PATH}/train/teams.csv"
 }
-
-TRAINING_YEARS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-EVALUATE_YEAR = 10
-
+COMPETITION_DATASETS = {
+    "coaches":          f"{PATH}/test/coaches.csv",
+    "players_teams":    f"{PATH}/test/players_teams.csv",
+    "teams":       f"{PATH}/test/teams.csv",
+}
+EVALUATE_YEAR = 10 if PATH == 'dataset/train' else 11
+FILE = False
+TEST = False
+COMPETITION = True
 MODELS = {
     'LogisticRegression': LogisticRegression(max_iter=1000),
     'RandomForestClassifier': RandomForestClassifier(n_estimators=100),
     'SVC': SVC(probability=True),
     'KNeighborsClassifier': KNeighborsClassifier(n_neighbors=5)
 }
+FEATURE_SELECTION = [
+    None,
+    chi2,
+    f_regression,
+    mutual_info_regression,
+    mutual_info_classif,
+    f_classif    
+]
+LOOPS = 10
+
 
 def main():
     # Data Load
     datasets = loadDatasets(DATASETS)
+    evaluate_data = prepare_competition_data(loadDatasets(COMPETITION_DATASETS))
     print('[\033[92m✓\033[39m] Dataset load')
 
     # Data Preparation
@@ -63,10 +73,14 @@ def main():
     
     # Pass teams_post and teams to know how many times a team went to the playoffs
     evaluate_dataset = create_final_dataset(
+        datasets['teams_data'],
         datasets['coaches_data'],
         datasets['teams_post'], 
         datasets['teams'], 
-        datasets['players_teams'][datasets['players_teams']['year'] != 10]
+        datasets['players_teams'],
+        evaluate_data,
+        target_year=EVALUATE_YEAR,
+        aggregation_method='none'
     )
     print('[\033[92m✓\033[39m] Evaluate dataset creation')
 
@@ -74,39 +88,98 @@ def main():
     handle_outliers('points', datasets['players_teams'])
     print('[\033[92m✓\033[39m] Outliers handling')
 
-    # print("Training dataset shape: ", training_dataset.columns)
-    # print("Evaluate dataset shape: ", evaluate_dataset.columns)
+    # pd.set_option('display.max_rows', None)  # Display all rows
+    # pd.set_option('display.max_columns', None)  # Display all columns
+    # print(training_dataset)
+    # print(evaluate_dataset)
+    
 
-    results = {}
-    for model in MODELS:
-        if model == 'LogisticRegression' or model == 'KNeighborsClassifier':
-            results[model] = evaluate_model(MODELS[model], training_dataset, evaluate_dataset)
-        elif model == 'RandomForestClassifier' or model == 'SVC':
-            results[model] = {}
-            max_precision1, max_precision2, max_precision3, max_precision4, max_precision5, max_precision6 = 0, 0, 0, 0, 0, 0
-            for _ in range(1, 20):
-                tmp = evaluate_model(MODELS[model], training_dataset, evaluate_dataset)
-                if tmp['default']['precision'] > max_precision1:
-                    max_precision1 = tmp['default']['precision']
-                    results[model]['default'] = tmp['default']
-                if tmp['chi2']['precision'] > max_precision2:
-                    max_precision2 = tmp['chi2']['precision']   
-                    results[model]['chi2'] = tmp['chi2']
-                if tmp['f_regression']['precision'] > max_precision3:
-                    max_precision3 = tmp['f_regression']['precision']   
-                    results[model]['f_regression'] = tmp['f_regression']
-                if tmp['mutual_info_regression']['precision'] > max_precision4:
-                    max_precision4 = tmp['mutual_info_regression']['precision']   
-                    results[model]['mutual_info_regression'] = tmp['mutual_info_regression']
-                if tmp['mutual_info_classif']['precision'] > max_precision5:
-                    max_precision5 = tmp['mutual_info_classif']['precision']   
-                    results[model]['mutual_info_classif'] = tmp['mutual_info_classif']
-                if tmp['f_classif']['precision'] > max_precision6:
-                    max_precision6 = tmp['f_classif']['precision']   
-                    results[model]['f_classif'] = tmp['f_classif']
-        print(f'[\033[92m✓\033[39m] {model} model evaluation')
+    if FILE:
+        RESULT_PATH = 'dataset/s11/delivery4/G67.csv'
+        test_file = pd.read_csv(RESULT_PATH)
+        print(f"The error of {RESULT_PATH} is: {calculate_error(test_file)}")
+    if TEST:
+        evaluate_all_models(MODELS, training_dataset, evaluate_dataset)
+    if COMPETITION:
+        run = {}
+        guessed = 0
+        total = 0
+        best = {'error': 100, 'correct': 0, 'guess': [], 'result': {}}
+        for fs in FEATURE_SELECTION:
+            for _ in range(LOOPS):
+                result, predicted, error = predict_playoff_teams(MODELS['RandomForestClassifier'], training_dataset, evaluate_dataset, CORRECT_TEAMS, fs)
+                
+                run['error'] = error
+                run['correct'] = len(set(CORRECT_TEAMS).intersection(set(predicted)))
+                run['guess'] = predicted
+                run['result'] = result
+                display_result(run, CORRECT_TEAMS)
+                
+                guessed += set(predicted) == set(CORRECT_TEAMS)
+                total += 1
+                if error < best['error']:
+                    best = run
 
-    build_report(results)
+        # for fs in FEATURE_SELECTION:
+        #     for _ in range(total):
+        #         result, predicted, error = predict_playoff_teams(MODELS['SVC'], training_dataset, evaluate_dataset, fs)
+
+        #         run['error'] = error
+        #         run['correct'] = len(set(correct).intersection(set(predicted)))
+        #         run['guess'] = predicted
+        #         run['result'] = result
+        #         display_result(run, correct)
+                
+        #         guessed += set(predicted) == set(correct)
+        #         total += 1
+        #         if error < best['error']:
+        #             best = run
+                
+        # for fs in FEATURE_SELECTION:
+        #     result, predicted, error = predict_playoff_teams(MODELS['LogisticRegression'], training_dataset, evaluate_dataset, fs)
+
+        #     run['error'] = error
+        #     run['correct'] = len(set(correct).intersection(set(predicted)))
+        #     run['guess'] = predicted
+        #     run['result'] = result
+        #     display_result(run, correct)
+            
+        #     guessed += set(predicted) == set(correct)
+                # total += 1
+        #     if error < best['error']:
+        #         best = run
+                
+        # for fs in FEATURE_SELECTION:
+        #     result, predicted, error = predict_playoff_teams(MODELS['KNeighborsClassifier'], training_dataset, evaluate_dataset, fs)
+            
+        #     run['error'] = error
+        #     run['correct'] = len(set(correct).intersection(set(predicted)))
+        #     run['guess'] = predicted
+        #     run['result'] = result
+        #     display_result(run, correct)
+            
+        #     guessed += set(predicted) == set(correct)
+                # total += 1
+        #     if error < best['error']:
+        #         best = run
+        
+        print('\n\n')
+        print("________________________________________________________________________")
+        print(f"Overall:\n\n         Error: {best['error']}\n     Correct %: {best['correct'] / 8 * 100}\n         Guess: {best['guess']}")
+        print(f"       Correct: {CORRECT_TEAMS}")
+        print("________________________________________________________________________")
+        
+        for i, (index, row) in enumerate(best['result'].sort_values(by='Playoff', ascending=False).iterrows()):            
+            if (i + 1 <= 8): 
+                print("\033[92m", end='')
+            print(f"{i+1:<3}         {row['tmID']:<5} - {row['Playoff']:<6}    {'\033[92m✓\033[39m' if ((i+1 <= 8) == (row['tmID'] in CORRECT_TEAMS)) else '\033[91m✗\033[39m'}")
+            print("\033[39m", end='')
+            if (i + 1 == 8):
+                print("_______________________________")
+                
+        print(total, len(FEATURE_SELECTION))
+        print(f"Guessed: {guessed} / {total}")
+        best['result'].to_csv(f'{PATH}/out/{str(best['error']).replace('.', '-')}.csv', index = False)
 
 if __name__ == "__main__":
     main()
